@@ -1,0 +1,12 @@
+{
+  "name": "pointcalc",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "dependencies": {
+    "@google/generative-ai": "^0.x.x",
+    "dotenv": "^16.x.x",
+    "express": "^4.x.x",
+    "multer": "^1.x.x"
+  }
+}
