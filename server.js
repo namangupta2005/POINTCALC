@@ -17,11 +17,10 @@ const apiKey = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
 const MODEL_NAME = 'gemini-3.6-flash';
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 function parseCleanJson(text) {
