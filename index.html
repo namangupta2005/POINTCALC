@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>eSports PointCalc Pro - Tournament Suite</title>
+  <title>eSports TourneyManager & PointCalc</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -22,138 +22,205 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen p-2.5 sm:p-4 md:p-8 font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
 
   <div class="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-    
-    <!-- Title Header -->
-    <div class="text-center space-y-1">
-      <h1 class="text-2xl sm:text-3xl md:text-5xl font-black tracking-wider text-amber-400 uppercase">eSports PointCalc Suite</h1>
-      <p class="text-slate-400 text-[11px] sm:text-xs md:text-sm">Mobile-Optimized Multi-Match Tournament Engine</p>
-    </div>
 
-    <!-- CONSOLE LOG -->
-    <div class="bg-black/60 border border-slate-800 rounded-xl p-3 font-mono text-[11px] sm:text-xs space-y-1">
-      <div class="flex justify-between items-center text-slate-400 font-bold border-b border-slate-800 pb-1">
-        <span>STATUS LOG:</span>
-        <button onclick="document.getElementById('debugLog').innerText = 'Ready.'" class="text-[10px] text-amber-400 hover:underline">Clear</button>
-      </div>
-      <div id="debugLog" class="text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all">Ready. Set up Slots & Lobby once.</div>
-    </div>
-
-    <!-- STEP 1: SLOTS (Mobile: 2 cols, Tablet: 3-4 cols, PC: 6 cols) -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center space-x-2">
-          <span class="text-[10px] sm:text-xs font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded">STEP 1</span>
-          <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200">Registered Slots (1-12)</h2>
-        </div>
-        <button id="saveSlotlistBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[11px] sm:text-xs uppercase transition-all">Save</button>
-      </div>
-      <div id="slotlistInputs" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"></div>
-    </div>
-
-    <!-- STEP 2: LOBBY SCREENSHOT -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center space-x-2">
-          <span class="text-[10px] sm:text-xs font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded">STEP 2</span>
-          <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200">Lobby Slots & Lineup</h2>
-        </div>
-      </div>
-      <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
-        <div class="flex-1">
-          <label class="block text-[11px] text-slate-400 mb-1">Select 1-3 Lobby Screenshots</label>
-          <input type="file" id="lobbyInput" accept="image/*" multiple class="block w-full text-xs text-slate-400 file:mr-2 sm:file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-blue-500 file:text-slate-950 hover:file:bg-blue-400 cursor-pointer bg-slate-950 rounded-lg border border-slate-800 p-1" />
-        </div>
-        <button id="processLobbyBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md">
-          <span id="lobbyBtnSpinner" class="btn-spinner hidden"></span>
-          <span id="lobbyBtnText">Lock Lobby</span>
-        </button>
-      </div>
-      <div id="lobbyContainer" class="hidden space-y-3 pt-3 border-t border-slate-800">
-        <div id="lobbyGraphic" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800"></div>
-      </div>
-    </div>
-
-    <!-- STEP 3: MATCH PROCESSOR -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <span class="text-[10px] sm:text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">STEP 3</span>
-          <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200 truncate max-w-[180px] sm:max-w-none" id="currentMatchHeader">MATCH 1 Result</h2>
-        </div>
-        <span class="text-[10px] sm:text-xs font-mono bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-amber-400" id="matchCounterBadge">Matches: 0</span>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end">
+    <!-- ================= VIEW 1: TOURNAMENTS DASHBOARD ================= -->
+    <div id="dashboardView" class="space-y-6">
+      
+      <!-- Top Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
-          <label class="block text-[11px] text-slate-400 mb-1">Result Screenshots</label>
-          <input type="file" id="resultInput" accept="image/*" multiple class="block w-full text-xs text-slate-400 file:mr-2 sm:file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 cursor-pointer bg-slate-950 rounded-lg border border-slate-800 p-1" />
+          <h1 class="text-2xl sm:text-3xl font-black text-amber-400 uppercase tracking-wider">Tournament Hub</h1>
+          <p class="text-xs text-slate-400">Manage, calculate, and save all your scrims and tournaments in one place.</p>
         </div>
-        <div>
-          <label class="block text-[11px] text-slate-400 mb-1">Scoring Preset</label>
-          <select id="presetSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-amber-400">
-            <option value="ff">Free Fire (12, 9, 8, 7, 6, 5...)</option>
-            <option value="bgmi">BGMI (10, 6, 5, 4, 3, 2...)</option>
-          </select>
-        </div>
-        <button id="processResultBtn" class="w-full sm:col-span-2 md:col-span-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md">
-          <span id="resultBtnSpinner" class="btn-spinner hidden"></span>
-          <span id="resultBtnText">Calculate Match</span>
+        <button id="showCreateModalBtn" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center space-x-1.5">
+          <span class="text-base leading-none">+</span>
+          <span>Create Tournament</span>
         </button>
       </div>
 
-      <div id="nextMatchActionArea" class="hidden pt-3 border-t border-slate-800 flex flex-col sm:flex-row gap-2 justify-between items-center">
-        <div class="text-xs text-emerald-400 font-bold" id="matchProcessedText">Match recorded!</div>
-        <button id="addNextMatchBtn" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">
-          <span>+ Add Match 2</span>
-        </button>
+      <!-- Tournaments Grid -->
+      <div>
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Saved Tournaments (<span id="tourneyCount">0</span>)</h2>
+        </div>
+        <div id="tourneyListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <!-- Tournament cards will be rendered here -->
+        </div>
+        <div id="noTourneyNotice" class="hidden text-center py-16 bg-slate-900/50 border border-dashed border-slate-800 rounded-2xl space-y-3">
+          <p class="text-sm text-slate-400 font-medium">No tournaments saved yet.</p>
+          <button onclick="document.getElementById('showCreateModalBtn').click()" class="bg-amber-500 text-slate-950 text-xs font-black px-4 py-2 rounded-lg uppercase">Create Your First Tournament</button>
+        </div>
       </div>
     </div>
 
-    <!-- OVERALL STANDINGS (OS) -->
-    <div id="osSection" class="hidden space-y-3 sm:space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div>
-          <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
-          <p class="text-[10px] sm:text-[11px] text-slate-400">Swipe table horizontally if needed on mobile.</p>
-        </div>
-        <button id="downloadOsBtn" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">Download OS (.png)</button>
-      </div>
 
-      <div id="osGraphic" class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-2xl">
-        <div class="border-b border-slate-800 pb-3 mb-3 flex justify-between items-center">
+    <!-- ================= VIEW 2: ACTIVE TOURNAMENT WORKSPACE ================= -->
+    <div id="workspaceView" class="hidden space-y-4 sm:space-y-6">
+
+      <!-- Navigation & Active Tourney Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
+        <div class="flex items-center space-x-3">
+          <button id="backToHubBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 flex items-center space-x-1">
+            <span>←</span> <span>Hub</span>
+          </button>
           <div>
-            <h3 class="text-lg sm:text-2xl md:text-3xl font-black text-amber-400 tracking-wider uppercase">Overall Standings</h3>
-            <p class="text-[10px] sm:text-xs text-slate-400 font-mono" id="osGraphicSubTitle">CUMULATIVE SCORES</p>
+            <h1 class="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-wide truncate max-w-[240px] sm:max-w-md" id="activeTourneyName">Tournament Name</h1>
+            <p class="text-[10px] sm:text-xs text-slate-400" id="activeTourneySubtitle">ID: 0 • Auto-Saved</p>
           </div>
-          <span class="text-[10px] sm:text-xs bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1 rounded-full font-mono font-bold" id="totalMatchesBadge">MATCHES: 0</span>
         </div>
-
-        <div class="overflow-x-auto -mx-1 sm:mx-0">
-          <table class="w-full text-left border-collapse min-w-[500px]">
-            <thead>
-              <tr class="border-b border-slate-800 text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider">
-                <th class="py-2.5 px-2 sm:px-3 text-center w-12">#</th>
-                <th class="py-2.5 px-2 sm:px-3 min-w-[120px]">Team</th>
-                <th class="py-2.5 px-2 sm:px-3 text-center">M</th>
-                <th class="py-2.5 px-2 sm:px-3 text-center">W</th>
-                <th class="py-2.5 px-2 sm:px-3 text-center">Place</th>
-                <th class="py-2.5 px-2 sm:px-3 text-center">Kills</th>
-                <th class="py-2.5 px-2 sm:px-3 text-right font-black text-amber-400">Total</th>
-              </tr>
-            </thead>
-            <tbody id="osTableBody" class="divide-y divide-slate-800 text-xs sm:text-sm"></tbody>
-          </table>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] sm:text-xs bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-emerald-400 font-mono" id="matchesRecordedBadge">Matches: 0</span>
         </div>
       </div>
+
+      <!-- STATUS LOG -->
+      <div class="bg-black/60 border border-slate-800 rounded-xl p-3 font-mono text-[11px] sm:text-xs space-y-1">
+        <div class="flex justify-between items-center text-slate-400 font-bold border-b border-slate-800 pb-1">
+          <span>STATUS LOG:</span>
+          <button onclick="document.getElementById('debugLog').innerText = 'Ready.'" class="text-[10px] text-amber-400 hover:underline">Clear</button>
+        </div>
+        <div id="debugLog" class="text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all">Ready. Setup Slots & Lobby for this tournament.</div>
+      </div>
+
+      <!-- STEP 1: REGISTERED SLOTS -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-[10px] sm:text-xs font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded">STEP 1</span>
+            <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200">Registered Slots (1-12)</h2>
+          </div>
+          <button id="saveSlotlistBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[11px] sm:text-xs uppercase transition-all">Save Slots</button>
+        </div>
+        <div id="slotlistInputs" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"></div>
+      </div>
+
+      <!-- STEP 2: MASTER LOBBY -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-[10px] sm:text-xs font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded">STEP 2</span>
+            <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200">Lobby Slots & Lineup</h2>
+          </div>
+        </div>
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+          <div class="flex-1">
+            <label class="block text-[11px] text-slate-400 mb-1">Select 1-3 Lobby Screenshots</label>
+            <input type="file" id="lobbyInput" accept="image/*" multiple class="block w-full text-xs text-slate-400 file:mr-2 sm:file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-blue-500 file:text-slate-950 hover:file:bg-blue-400 cursor-pointer bg-slate-950 rounded-lg border border-slate-800 p-1" />
+          </div>
+          <button id="processLobbyBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md">
+            <span id="lobbyBtnSpinner" class="btn-spinner hidden"></span>
+            <span id="lobbyBtnText">Lock Lobby</span>
+          </button>
+        </div>
+        <div id="lobbyContainer" class="hidden space-y-3 pt-3 border-t border-slate-800">
+          <div id="lobbyGraphic" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800"></div>
+        </div>
+      </div>
+
+      <!-- STEP 3: MATCH PROCESSOR -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2 sm:space-x-3">
+            <span class="text-[10px] sm:text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">STEP 3</span>
+            <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200" id="currentMatchHeader">MATCH 1 Result</h2>
+          </div>
+          <span class="text-[10px] sm:text-xs font-mono bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-amber-400" id="matchCounterBadge">Matches: 0</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Result Screenshots</label>
+            <input type="file" id="resultInput" accept="image/*" multiple class="block w-full text-xs text-slate-400 file:mr-2 sm:file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 cursor-pointer bg-slate-950 rounded-lg border border-slate-800 p-1" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Scoring Preset</label>
+            <select id="presetSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-amber-400">
+              <option value="ff">Free Fire (12, 9, 8, 7, 6, 5...)</option>
+              <option value="bgmi">BGMI (10, 6, 5, 4, 3, 2...)</option>
+            </select>
+          </div>
+          <button id="processResultBtn" class="w-full sm:col-span-2 md:col-span-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md">
+            <span id="resultBtnSpinner" class="btn-spinner hidden"></span>
+            <span id="resultBtnText">Calculate Match</span>
+          </button>
+        </div>
+
+        <div id="nextMatchActionArea" class="hidden pt-3 border-t border-slate-800 flex flex-col sm:flex-row gap-2 justify-between items-center">
+          <div class="text-xs text-emerald-400 font-bold" id="matchProcessedText">Match recorded!</div>
+          <button id="addNextMatchBtn" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">
+            <span>+ Add Next Match</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- OVERALL STANDINGS (OS) -->
+      <div id="osSection" class="hidden space-y-3 sm:space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
+            <p class="text-[10px] sm:text-[11px] text-slate-400">Realtime Cumulative Point Table</p>
+          </div>
+          <button id="downloadOsBtn" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">Download Standings (.png)</button>
+        </div>
+
+        <div id="osGraphic" class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-2xl">
+          <div class="border-b border-slate-800 pb-3 mb-3 flex justify-between items-center">
+            <div>
+              <h3 class="text-lg sm:text-2xl md:text-3xl font-black text-amber-400 tracking-wider uppercase" id="osTitleDisplay">Overall Standings</h3>
+              <p class="text-[10px] sm:text-xs text-slate-400 font-mono" id="osGraphicSubTitle">CUMULATIVE SCORES</p>
+            </div>
+            <span class="text-[10px] sm:text-xs bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1 rounded-full font-mono font-bold" id="totalMatchesBadge">MATCHES: 0</span>
+          </div>
+
+          <div class="overflow-x-auto -mx-1 sm:mx-0">
+            <table class="w-full text-left border-collapse min-w-[500px]">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider">
+                  <th class="py-2.5 px-2 sm:px-3 text-center w-12">#</th>
+                  <th class="py-2.5 px-2 sm:px-3 min-w-[120px]">Team</th>
+                  <th class="py-2.5 px-2 sm:px-3 text-center">M</th>
+                  <th class="py-2.5 px-2 sm:px-3 text-center">W</th>
+                  <th class="py-2.5 px-2 sm:px-3 text-center">Place</th>
+                  <th class="py-2.5 px-2 sm:px-3 text-center">Kills</th>
+                  <th class="py-2.5 px-2 sm:px-3 text-right font-black text-amber-400">Total</th>
+                </tr>
+              </thead>
+              <tbody id="osTableBody" class="divide-y divide-slate-800 text-xs sm:text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
 
+  <!-- MODAL: CREATE TOURNAMENT -->
+  <div id="createTourneyModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <h3 class="text-base font-black text-amber-400 uppercase tracking-wider">Create New Tournament</h3>
+      <div>
+        <label class="block text-[11px] text-slate-400 mb-1">Tournament / Scrim Title</label>
+        <input type="text" id="newTourneyNameInput" placeholder="e.g. Free Fire Scrims - Day 1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-amber-400 font-semibold" />
+      </div>
+      <div>
+        <label class="block text-[11px] text-slate-400 mb-1">Game Format</label>
+        <select id="newTourneyPreset" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-amber-400">
+          <option value="ff">Free Fire (12, 9, 8, 7, 6, 5...)</option>
+          <option value="bgmi">BGMI (10, 6, 5, 4, 3, 2...)</option>
+        </select>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button id="cancelCreateBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs uppercase">Cancel</button>
+        <button id="confirmCreateBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase">Create & Open</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    let registeredSlots = {};
-    let lobbyData = [];
-    let currentMatchNumber = 1;
-    let matchHistory = [];
+    const TOURNAMENTS_KEY = 'pointcalc_tournaments_v1';
+    let allTournaments = [];
+    let currentTourneyId = null;
 
     const scoringRules = {
       ff: { placements: { 1: 12, 2: 9, 3: 8, 4: 7, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1, 11: 0, 12: 0 }, kill: 1 },
@@ -162,6 +229,7 @@
 
     function logMsg(msg, isError = false) {
       const el = document.getElementById('debugLog');
+      if (!el) return;
       el.className = isError ? 'text-rose-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all' : 'text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all';
       el.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
     }
@@ -170,6 +238,182 @@
       return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
+    // --- STORAGE HELPERS ---
+    function loadAllTournaments() {
+      try {
+        const data = localStorage.getItem(TOURNAMENTS_KEY);
+        allTournaments = data ? JSON.parse(data) : [];
+      } catch (err) {
+        allTournaments = [];
+      }
+      renderTourneyList();
+    }
+
+    function saveAllTournaments() {
+      localStorage.setItem(TOURNAMENTS_KEY, JSON.stringify(allTournaments));
+    }
+
+    function getCurrentTourney() {
+      return allTournaments.find(t => t.id === currentTourneyId);
+    }
+
+    function renderTourneyList() {
+      const list = document.getElementById('tourneyListContainer');
+      const countEl = document.getElementById('tourneyCount');
+      const notice = document.getElementById('noTourneyNotice');
+      list.innerHTML = '';
+      countEl.innerText = allTournaments.length;
+
+      if (allTournaments.length === 0) {
+        notice.classList.remove('hidden');
+        return;
+      }
+      notice.classList.add('hidden');
+
+      allTournaments.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col justify-between space-y-3 transition-all';
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-1">
+              <span class="text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">${t.preset.toUpperCase()}</span>
+              <span class="text-[10px] text-slate-500 font-mono">${new Date(t.createdAt).toLocaleDateString()}</span>
+            </div>
+            <h3 class="font-bold text-sm text-slate-100 uppercase tracking-wide truncate">${t.name}</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Matches: <span class="text-amber-400 font-mono font-bold">${t.matchHistory.length}</span> • Slots: 12</p>
+          </div>
+          <div class="flex items-center gap-2 pt-2 border-t border-slate-800">
+            <button onclick="openTournament('${t.id}')" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black py-2 rounded-lg uppercase tracking-wider transition-all">Open</button>
+            <button onclick="deleteTournament('${t.id}')" class="bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white px-2.5 py-2 rounded-lg text-xs font-bold transition-all">🗑</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    // Modal Events
+    document.getElementById('showCreateModalBtn').addEventListener('click', () => {
+      document.getElementById('newTourneyNameInput').value = '';
+      document.getElementById('createTourneyModal').classList.remove('hidden');
+      document.getElementById('newTourneyNameInput').focus();
+    });
+
+    document.getElementById('cancelCreateBtn').addEventListener('click', () => {
+      document.getElementById('createTourneyModal').classList.add('hidden');
+    });
+
+    document.getElementById('confirmCreateBtn').addEventListener('click', () => {
+      const name = document.getElementById('newTourneyNameInput').value.trim();
+      if (!name) return alert('Tournament name daalna zaroori hai!');
+
+      const defaultSlots = {};
+      for (let i = 1; i <= 12; i++) defaultSlots[i] = `Team ${i}`;
+
+      const newTourney = {
+        id: 'tourney_' + Date.now(),
+        name: name,
+        preset: document.getElementById('newTourneyPreset').value,
+        createdAt: Date.now(),
+        registeredSlots: defaultSlots,
+        lobbyData: [],
+        currentMatchNumber: 1,
+        matchHistory: []
+      };
+
+      allTournaments.unshift(newTourney);
+      saveAllTournaments();
+      document.getElementById('createTourneyModal').classList.add('hidden');
+      renderTourneyList();
+      openTournament(newTourney.id);
+    });
+
+    // Open & Load Tournament Workspace
+    window.openTournament = function(id) {
+      currentTourneyId = id;
+      const t = getCurrentTourney();
+      if (!t) return;
+
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('workspaceView').classList.remove('hidden');
+
+      document.getElementById('activeTourneyName').innerText = t.name;
+      document.getElementById('osTitleDisplay').innerText = t.name;
+      document.getElementById('presetSelect').value = t.preset;
+
+      // Render 12 Slots Inputs
+      const slotContainer = document.getElementById('slotlistInputs');
+      slotContainer.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const val = t.registeredSlots[i] || `Team ${i}`;
+        slotContainer.innerHTML += `
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-1.5 sm:p-2">
+            <label class="text-[9px] sm:text-[10px] font-bold text-amber-400 block mb-0.5">SLOT ${i}</label>
+            <input type="text" id="slot_input_${i}" class="w-full bg-transparent border-0 text-xs text-slate-200 outline-none font-semibold focus:text-amber-300" value="${val}">
+          </div>
+        `;
+      }
+
+      // Restore Lobby
+      if (t.lobbyData && t.lobbyData.length > 0) {
+        renderLobbyCards(t.lobbyData);
+      } else {
+        document.getElementById('lobbyContainer').classList.add('hidden');
+      }
+
+      // Restore Matches
+      const matchCount = t.matchHistory.length;
+      document.getElementById('matchesRecordedBadge').innerText = `Matches: ${matchCount}`;
+      document.getElementById('matchCounterBadge').innerText = `Matches: ${matchCount}`;
+      document.getElementById('currentMatchHeader').innerText = `MATCH ${matchCount + 1} Result`;
+      t.currentMatchNumber = matchCount + 1;
+
+      if (matchCount > 0) {
+        renderCumulativeOS();
+      } else {
+        document.getElementById('osSection').classList.add('hidden');
+      }
+
+      logMsg(`Loaded tournament "${t.name}". Ready.`);
+    };
+
+    // Back to Dashboard
+    document.getElementById('backToHubBtn').addEventListener('click', () => {
+      currentTourneyId = null;
+      document.getElementById('workspaceView').classList.add('hidden');
+      document.getElementById('dashboardView').classList.remove('hidden');
+      renderTourneyList();
+    });
+
+    // Delete Tournament
+    window.deleteTournament = function(id) {
+      const t = allTournaments.find(x => x.id === id);
+      if (!confirm(`Kya aap sach mein "${t?.name}" delete karna chahte hain?`)) return;
+      allTournaments = allTournaments.filter(x => x.id !== id);
+      saveAllTournaments();
+      renderTourneyList();
+    };
+
+    // Save Slots
+    document.getElementById('saveSlotlistBtn').addEventListener('click', () => {
+      const t = getCurrentTourney();
+      if (!t) return;
+      for (let i = 1; i <= 12; i++) {
+        t.registeredSlots[i] = document.getElementById(`slot_input_${i}`).value.trim() || `Team ${i}`;
+      }
+      saveAllTournaments();
+      logMsg('12 Slots Saved & Updated.');
+    });
+
+    // Preset Change
+    document.getElementById('presetSelect').addEventListener('change', (e) => {
+      const t = getCurrentTourney();
+      if (!t) return;
+      t.preset = e.target.value;
+      saveAllTournaments();
+      if (t.matchHistory.length > 0) renderCumulativeOS();
+    });
+
+    // Compress Image
     async function compressImageFast(file) {
       return new Promise((resolve) => {
         try {
@@ -179,7 +423,7 @@
             img.src = e.target.result;
             img.onload = () => {
               const canvas = document.createElement('canvas');
-              const MAX_WIDTH = 1000;
+              const MAX_WIDTH = 900;
               let width = img.width;
               let height = img.height;
               if (width > MAX_WIDTH) {
@@ -193,7 +437,7 @@
               canvas.toBlob((blob) => {
                 if (blob) resolve(new File([blob], file.name, { type: 'image/jpeg' }));
                 else resolve(file);
-              }, 'image/jpeg', 0.80);
+              }, 'image/jpeg', 0.75);
             };
             img.onerror = () => resolve(file);
           };
@@ -205,41 +449,11 @@
       });
     }
 
-    async function fetchWithTimeout(resource, options = {}) {
-      const { timeout = 25000 } = options;
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeout);
-      try {
-        const response = await fetch(resource, { ...options, signal: controller.signal });
-        clearTimeout(id);
-        return response;
-      } catch (error) {
-        clearTimeout(id);
-        throw error;
-      }
-    }
-
-    // Step 1: Render 12 Slot Inputs
-    const slotContainer = document.getElementById('slotlistInputs');
-    for (let i = 1; i <= 12; i++) {
-      registeredSlots[i] = `Team ${i}`;
-      slotContainer.innerHTML += `
-        <div class="bg-slate-950 border border-slate-800 rounded-lg p-1.5 sm:p-2">
-          <label class="text-[9px] sm:text-[10px] font-bold text-amber-400 block mb-0.5">SLOT ${i}</label>
-          <input type="text" id="slot_input_${i}" class="w-full bg-transparent border-0 text-xs text-slate-200 outline-none font-semibold focus:text-amber-300" value="Team ${i}">
-        </div>
-      `;
-    }
-
-    document.getElementById('saveSlotlistBtn').addEventListener('click', () => {
-      for (let i = 1; i <= 12; i++) {
-        registeredSlots[i] = document.getElementById(`slot_input_${i}`).value.trim() || `Team ${i}`;
-      }
-      logMsg('12 Slots Saved.');
-    });
-
     // Step 2: Lobby Extract
     document.getElementById('processLobbyBtn').addEventListener('click', async (e) => {
+      const t = getCurrentTourney();
+      if (!t) return;
+
       const rawFiles = document.getElementById('lobbyInput').files;
       if (!rawFiles || rawFiles.length === 0) return alert('Select lobby screenshots first!');
 
@@ -255,15 +469,16 @@
       }
 
       try {
-        const res = await fetchWithTimeout('/api/extract-lobby', { method: 'POST', body: fd, timeout: 30000 });
+        const res = await fetch('/api/extract-lobby', { method: 'POST', body: fd });
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
 
-        lobbyData = json.data;
-        renderLobbyCards(lobbyData);
-        logMsg(`Master Lobby Saved: ${lobbyData.length} slot rosters registered.`);
+        t.lobbyData = json.data;
+        saveAllTournaments();
+        renderLobbyCards(t.lobbyData);
+        logMsg(`Master Lobby Saved: ${t.lobbyData.length} rosters registered.`);
       } catch (err) {
-        logMsg('Lobby error: ' + (err.name === 'AbortError' ? 'Timed Out. Try again.' : err.message), true);
+        logMsg('Lobby error: ' + err.message, true);
       } finally {
         spinner.classList.add('hidden');
         text.innerText = 'Lock Lobby';
@@ -272,11 +487,12 @@
     });
 
     function renderLobbyCards(data) {
+      const t = getCurrentTourney();
       const container = document.getElementById('lobbyGraphic');
       container.innerHTML = '';
       for (let i = 1; i <= 12; i++) {
         const slotItem = data.find(d => parseInt(d.slot) === i);
-        const team = registeredSlots[i] || `Slot ${i}`;
+        const team = t?.registeredSlots[i] || `Slot ${i}`;
         const players = slotItem?.players || [];
         container.innerHTML += `
           <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 sm:p-3">
@@ -293,20 +509,23 @@
       document.getElementById('lobbyContainer').classList.remove('hidden');
     }
 
-    // Match Engine: 1-Player IGN Match Rule
+    // Matching Algorithm
     function findMatchedSlot(entry) {
+      const t = getCurrentTourney();
+      if (!t) return null;
+
       const entryRaw = (entry.identifier || entry.teamIdentifier || entry.teamName || '');
       const entryClean = cleanString(entryRaw);
       const playersInResult = (entry.playerStats || []).map(p => cleanString(p.ign || ''));
 
       for (let slot = 1; slot <= 12; slot++) {
-        const regClean = cleanString(registeredSlots[slot]);
+        const regClean = cleanString(t.registeredSlots[slot]);
         if (regClean && regClean.length > 2 && (entryClean.includes(regClean) || regClean.includes(entryClean))) {
           return slot;
         }
       }
 
-      for (const slotObj of lobbyData) {
+      for (const slotObj of t.lobbyData) {
         const slotNum = parseInt(slotObj.slot);
         if (slotObj.players && Array.isArray(slotObj.players)) {
           for (const player of slotObj.players) {
@@ -326,8 +545,11 @@
       return null;
     }
 
-    // Step 3: Result Process
+    // Step 3: Match Result Extract
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
+      const t = getCurrentTourney();
+      if (!t) return;
+
       const rawFiles = document.getElementById('resultInput').files;
       if (!rawFiles || rawFiles.length === 0) return alert('Select match result screenshots!');
 
@@ -343,7 +565,7 @@
       }
 
       try {
-        const res = await fetchWithTimeout('/api/extract-result', { method: 'POST', body: fd, timeout: 35000 });
+        const res = await fetch('/api/extract-result', { method: 'POST', body: fd });
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
 
@@ -365,23 +587,25 @@
           if (matchedSlot) {
             verifiedMatchData.push({
               slot: matchedSlot,
-              teamName: registeredSlots[matchedSlot] || `Slot ${matchedSlot}`,
+              teamName: t.registeredSlots[matchedSlot] || `Slot ${matchedSlot}`,
               rank: parseInt(r.rank),
               kills: kills
             });
           }
         });
 
-        matchHistory[currentMatchNumber - 1] = verifiedMatchData;
+        t.matchHistory.push(verifiedMatchData);
+        saveAllTournaments();
         renderCumulativeOS();
 
         document.getElementById('nextMatchActionArea').classList.remove('hidden');
-        document.getElementById('matchProcessedText').innerText = `Match ${currentMatchNumber} calculated!`;
-        document.getElementById('addNextMatchBtn').querySelector('span').innerText = `+ Add Match ${currentMatchNumber + 1}`;
-        document.getElementById('matchCounterBadge').innerText = `Matches: ${matchHistory.length}`;
-        logMsg(`Match ${currentMatchNumber} finished. Standings updated.`);
+        document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} recorded!`;
+        document.getElementById('addNextMatchBtn').querySelector('span').innerText = `+ Add Match ${t.matchHistory.length + 1}`;
+        document.getElementById('matchesRecordedBadge').innerText = `Matches: ${t.matchHistory.length}`;
+        document.getElementById('matchCounterBadge').innerText = `Matches: ${t.matchHistory.length}`;
+        logMsg(`Match ${t.matchHistory.length} recorded and saved to tournament.`);
       } catch (err) {
-        logMsg('Scoreboard error: ' + (err.name === 'AbortError' ? 'AI request timed out.' : err.message), true);
+        logMsg('Scoreboard error: ' + err.message, true);
       } finally {
         spinner.classList.add('hidden');
         text.innerText = 'Calculate Match';
@@ -390,15 +614,19 @@
     });
 
     document.getElementById('addNextMatchBtn').addEventListener('click', () => {
-      currentMatchNumber++;
-      document.getElementById('currentMatchHeader').innerText = `MATCH ${currentMatchNumber} Result`;
+      const t = getCurrentTourney();
+      if (!t) return;
+      document.getElementById('currentMatchHeader').innerText = `MATCH ${t.matchHistory.length + 1} Result`;
       document.getElementById('resultInput').value = '';
       document.getElementById('nextMatchActionArea').classList.add('hidden');
-      logMsg(`Switched to Match ${currentMatchNumber}. Upload new screenshots.`);
+      logMsg(`Ready for Match ${t.matchHistory.length + 1}. Upload screenshots.`);
     });
 
     function renderCumulativeOS() {
-      const rule = scoringRules[document.getElementById('presetSelect').value];
+      const t = getCurrentTourney();
+      if (!t) return;
+
+      const rule = scoringRules[t.preset] || scoringRules.ff;
       const tbody = document.getElementById('osTableBody');
       tbody.innerHTML = '';
 
@@ -406,7 +634,7 @@
       for (let s = 1; s <= 12; s++) {
         totals[s] = {
           slot: s,
-          teamName: registeredSlots[s] || `Slot ${s}`,
+          teamName: t.registeredSlots[s] || `Slot ${s}`,
           matchesPlayed: 0,
           wins: 0,
           placePts: 0,
@@ -415,7 +643,7 @@
         };
       }
 
-      matchHistory.forEach(matchList => {
+      t.matchHistory.forEach(matchList => {
         matchList.forEach(m => {
           if (totals[m.slot]) {
             totals[m.slot].matchesPlayed += 1;
@@ -455,18 +683,24 @@
         tbody.appendChild(tr);
       });
 
-      document.getElementById('osGraphicSubTitle').innerText = `MATCH 1 TO ${matchHistory.length}`;
-      document.getElementById('totalMatchesBadge').innerText = `MATCHES: ${matchHistory.length}`;
+      document.getElementById('osGraphicSubTitle').innerText = `MATCH 1 TO ${t.matchHistory.length}`;
+      document.getElementById('totalMatchesBadge').innerText = `MATCHES: ${t.matchHistory.length}`;
       document.getElementById('osSection').classList.remove('hidden');
     }
 
     document.getElementById('downloadOsBtn').addEventListener('click', () => {
+      const t = getCurrentTourney();
       html2canvas(document.getElementById('osGraphic'), { scale: 2, backgroundColor: '#020617' }).then(cv => {
         const link = document.createElement('a');
-        link.download = `overall-standings-match-${matchHistory.length}.png`;
+        link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_final.png`;
         link.href = cv.toDataURL();
         link.click();
       });
+    });
+
+    // Start App
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAllTournaments();
     });
   </script>
 </body>
