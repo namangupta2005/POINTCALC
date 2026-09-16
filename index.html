@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>eSports TourneyManager & PointCalc</title>
+  <title>eSports TourneyManager Ultimate</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     .btn-spinner {
       border: 2px solid rgba(255, 255, 255, 0.2);
@@ -25,12 +26,10 @@
 
     <!-- ================= VIEW 1: TOURNAMENTS DASHBOARD ================= -->
     <div id="dashboardView" class="space-y-6">
-      
-      <!-- Top Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
           <h1 class="text-2xl sm:text-3xl font-black text-amber-400 uppercase tracking-wider">Tournament Hub</h1>
-          <p class="text-xs text-slate-400">Manage, calculate, and save all your scrims and tournaments in one place.</p>
+          <p class="text-xs text-slate-400">Manage, calculate, and review Free Fire tournaments with player verification.</p>
         </div>
         <button id="showCreateModalBtn" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center space-x-1.5">
           <span class="text-base leading-none">+</span>
@@ -38,17 +37,14 @@
         </button>
       </div>
 
-      <!-- Tournaments Grid -->
       <div>
         <div class="flex items-center justify-between mb-3 px-1">
           <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Saved Tournaments (<span id="tourneyCount">0</span>)</h2>
         </div>
-        <div id="tourneyListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <!-- Tournament cards will be rendered here -->
-        </div>
+        <div id="tourneyListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
         <div id="noTourneyNotice" class="hidden text-center py-16 bg-slate-900/50 border border-dashed border-slate-800 rounded-2xl space-y-3">
-          <p class="text-sm text-slate-400 font-medium">No tournaments saved yet.</p>
-          <button onclick="document.getElementById('showCreateModalBtn').click()" class="bg-amber-500 text-slate-950 text-xs font-black px-4 py-2 rounded-lg uppercase">Create Your First Tournament</button>
+          <p class="text-sm text-slate-400 font-medium">Koi tournament nahi bana abhi tak!</p>
+          <button onclick="document.getElementById('showCreateModalBtn').click()" class="bg-amber-500 text-slate-950 text-xs font-black px-4 py-2 rounded-lg uppercase">Pehela Tournament Banao</button>
         </div>
       </div>
     </div>
@@ -57,15 +53,15 @@
     <!-- ================= VIEW 2: ACTIVE TOURNAMENT WORKSPACE ================= -->
     <div id="workspaceView" class="hidden space-y-4 sm:space-y-6">
 
-      <!-- Navigation & Active Tourney Header -->
+      <!-- Navigation & Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
         <div class="flex items-center space-x-3">
           <button id="backToHubBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 flex items-center space-x-1">
             <span>←</span> <span>Hub</span>
           </button>
           <div>
-            <h1 class="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-wide truncate max-w-[240px] sm:max-w-md" id="activeTourneyName">Tournament Name</h1>
-            <p class="text-[10px] sm:text-xs text-slate-400" id="activeTourneySubtitle">ID: 0 • Auto-Saved</p>
+            <h1 class="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-wide truncate max-w-[240px] sm:max-w-md" id="activeTourneyName">Tournament</h1>
+            <p class="text-[10px] sm:text-xs text-slate-400">Auto-Sync & Roster Cross-Check Active</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -79,17 +75,28 @@
           <span>STATUS LOG:</span>
           <button onclick="document.getElementById('debugLog').innerText = 'Ready.'" class="text-[10px] text-amber-400 hover:underline">Clear</button>
         </div>
-        <div id="debugLog" class="text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all">Ready. Setup Slots & Lobby for this tournament.</div>
+        <div id="debugLog" class="text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all">Ready. Setup Slots & Lobby.</div>
       </div>
 
-      <!-- STEP 1: REGISTERED SLOTS -->
+      <!-- STEP 1: REGISTERED SLOTS (WITH ZIP EXPORT & IMPORT) -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div class="flex items-center space-x-2">
             <span class="text-[10px] sm:text-xs font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded">STEP 1</span>
             <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200">Registered Slots (1-12)</h2>
           </div>
-          <button id="saveSlotlistBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[11px] sm:text-xs uppercase transition-all">Save Slots</button>
+          <div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+            <button id="exportSlotsZipBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-lg text-[11px] uppercase transition-all flex items-center space-x-1 border border-slate-700">
+              <span>📦</span> <span>Export .zip</span>
+            </button>
+            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-lg text-[11px] uppercase transition-all flex items-center space-x-1 border border-slate-700 cursor-pointer">
+              <span>📂</span> <span>Import .zip</span>
+              <input type="file" id="importSlotsZipInput" accept=".zip" class="hidden" />
+            </label>
+            <button id="saveSlotlistBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[11px] uppercase transition-all shadow">
+              Save Slots
+            </button>
+          </div>
         </div>
         <div id="slotlistInputs" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"></div>
       </div>
@@ -101,10 +108,11 @@
             <span class="text-[10px] sm:text-xs font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded">STEP 2</span>
             <h2 class="text-xs sm:text-sm font-bold uppercase text-slate-200">Lobby Slots & Lineup</h2>
           </div>
+          <span class="text-[10px] text-slate-400">Click ✏️ to update/crop individual slot</span>
         </div>
         <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
           <div class="flex-1">
-            <label class="block text-[11px] text-slate-400 mb-1">Select 1-3 Lobby Screenshots</label>
+            <label class="block text-[11px] text-slate-400 mb-1">Upload 1-3 Full Lobby Screenshots</label>
             <input type="file" id="lobbyInput" accept="image/*" multiple class="block w-full text-xs text-slate-400 file:mr-2 sm:file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-blue-500 file:text-slate-950 hover:file:bg-blue-400 cursor-pointer bg-slate-950 rounded-lg border border-slate-800 p-1" />
           </div>
           <button id="processLobbyBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md">
@@ -153,12 +161,26 @@
         </div>
       </div>
 
+      <!-- MATCH RESULT ROSTER COMPARISON & VERIFICATION -->
+      <div id="matchReviewSection" class="hidden space-y-3 bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-xs sm:text-sm font-bold uppercase text-amber-400">Lobby vs End SS Roster Comparison</h3>
+            <p class="text-[10px] text-slate-400">Side-by-side comparison of locked lobby players vs players detected in the end screenshot.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <select id="reviewMatchSelector" onchange="renderReviewSection(parseInt(this.value))" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-amber-400 font-mono outline-none"></select>
+          </div>
+        </div>
+        <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
       <!-- OVERALL STANDINGS (OS) -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
-            <p class="text-[10px] sm:text-[11px] text-slate-400">Realtime Cumulative Point Table</p>
+            <p class="text-[10px] sm:text-[11px] text-slate-400">Realtime Point Table</p>
           </div>
           <button id="downloadOsBtn" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">Download Standings (.png)</button>
         </div>
@@ -200,7 +222,7 @@
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
       <h3 class="text-base font-black text-amber-400 uppercase tracking-wider">Create New Tournament</h3>
       <div>
-        <label class="block text-[11px] text-slate-400 mb-1">Tournament / Scrim Title</label>
+        <label class="block text-[11px] text-slate-400 mb-1">Tournament Title</label>
         <input type="text" id="newTourneyNameInput" placeholder="e.g. Free Fire Scrims - Day 1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-amber-400 font-semibold" />
       </div>
       <div>
@@ -217,8 +239,40 @@
     </div>
   </div>
 
+  <!-- MODAL: EDIT SINGLE SLOT ROSTER & CROPPED SS -->
+  <div id="editSlotModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-sm font-black text-amber-400 uppercase tracking-wider" id="editSlotModalTitle">Edit Slot Lineup</h3>
+        <button onclick="closeEditSlotModal()" class="text-slate-400 hover:text-white text-base">✕</button>
+      </div>
+      <input type="hidden" id="editingSlotNumber" />
+
+      <div>
+        <label class="block text-[11px] text-slate-400 mb-1">Players (Comma Separated IGNs)</label>
+        <input type="text" id="manualSlotPlayersInput" placeholder="Player1, Player2, Player3, Player4" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-amber-400 font-mono" />
+      </div>
+
+      <div class="border-t border-slate-800 pt-3">
+        <label class="block text-[11px] text-slate-400 mb-1">OR Upload Cropped Slot Screenshot</label>
+        <div class="flex gap-2">
+          <input type="file" id="singleSlotCropInput" accept="image/*" class="block w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-500 file:text-slate-950 hover:file:bg-blue-400 cursor-pointer bg-slate-950 rounded-lg border border-slate-800 p-1" />
+          <button id="extractSingleCropBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs uppercase flex items-center space-x-1">
+            <span id="singleCropSpinner" class="btn-spinner hidden"></span>
+            <span id="singleCropBtnText">AI OCR</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+        <button onclick="closeEditSlotModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs uppercase">Cancel</button>
+        <button id="saveManualSlotBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase">Save Roster</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const TOURNAMENTS_KEY = 'pointcalc_tournaments_v1';
+    const TOURNAMENTS_KEY = 'pointcalc_tournaments_v4';
     let allTournaments = [];
     let currentTourneyId = null;
 
@@ -238,12 +292,11 @@
       return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
-    // --- STORAGE HELPERS ---
     function loadAllTournaments() {
       try {
         const data = localStorage.getItem(TOURNAMENTS_KEY);
         allTournaments = data ? JSON.parse(data) : [];
-      } catch (err) {
+      } catch {
         allTournaments = [];
       }
       renderTourneyList();
@@ -291,7 +344,6 @@
       });
     }
 
-    // Modal Events
     document.getElementById('showCreateModalBtn').addEventListener('click', () => {
       document.getElementById('newTourneyNameInput').value = '';
       document.getElementById('createTourneyModal').classList.remove('hidden');
@@ -316,7 +368,6 @@
         createdAt: Date.now(),
         registeredSlots: defaultSlots,
         lobbyData: [],
-        currentMatchNumber: 1,
         matchHistory: []
       };
 
@@ -327,7 +378,6 @@
       openTournament(newTourney.id);
     });
 
-    // Open & Load Tournament Workspace
     window.openTournament = function(id) {
       currentTourneyId = id;
       const t = getCurrentTourney();
@@ -340,7 +390,20 @@
       document.getElementById('osTitleDisplay').innerText = t.name;
       document.getElementById('presetSelect').value = t.preset;
 
-      // Render 12 Slots Inputs
+      renderSlotInputs();
+
+      if (t.lobbyData && t.lobbyData.length > 0) {
+        renderLobbyCards(t.lobbyData);
+      } else {
+        document.getElementById('lobbyContainer').classList.add('hidden');
+      }
+
+      refreshMatchState();
+      logMsg(`Loaded "${t.name}".`);
+    };
+
+    function renderSlotInputs() {
+      const t = getCurrentTourney();
       const slotContainer = document.getElementById('slotlistInputs');
       slotContainer.innerHTML = '';
       for (let i = 1; i <= 12; i++) {
@@ -352,31 +415,38 @@
           </div>
         `;
       }
+    }
 
-      // Restore Lobby
-      if (t.lobbyData && t.lobbyData.length > 0) {
-        renderLobbyCards(t.lobbyData);
-      } else {
-        document.getElementById('lobbyContainer').classList.add('hidden');
-      }
-
-      // Restore Matches
+    function refreshMatchState() {
+      const t = getCurrentTourney();
       const matchCount = t.matchHistory.length;
       document.getElementById('matchesRecordedBadge').innerText = `Matches: ${matchCount}`;
       document.getElementById('matchCounterBadge').innerText = `Matches: ${matchCount}`;
       document.getElementById('currentMatchHeader').innerText = `MATCH ${matchCount + 1} Result`;
-      t.currentMatchNumber = matchCount + 1;
 
       if (matchCount > 0) {
         renderCumulativeOS();
+        updateMatchSelectorOptions();
+        renderReviewSection(matchCount - 1);
       } else {
         document.getElementById('osSection').classList.add('hidden');
+        document.getElementById('matchReviewSection').classList.add('hidden');
       }
+    }
 
-      logMsg(`Loaded tournament "${t.name}". Ready.`);
-    };
+    function updateMatchSelectorOptions() {
+      const t = getCurrentTourney();
+      const sel = document.getElementById('reviewMatchSelector');
+      sel.innerHTML = '';
+      t.matchHistory.forEach((_, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = `Match ${idx + 1}`;
+        if (idx === t.matchHistory.length - 1) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
 
-    // Back to Dashboard
     document.getElementById('backToHubBtn').addEventListener('click', () => {
       currentTourneyId = null;
       document.getElementById('workspaceView').classList.add('hidden');
@@ -384,36 +454,237 @@
       renderTourneyList();
     });
 
-    // Delete Tournament
     window.deleteTournament = function(id) {
       const t = allTournaments.find(x => x.id === id);
-      if (!confirm(`Kya aap sach mein "${t?.name}" delete karna chahte hain?`)) return;
+      if (!confirm(`Delete "${t?.name}"?`)) return;
       allTournaments = allTournaments.filter(x => x.id !== id);
       saveAllTournaments();
       renderTourneyList();
     };
 
-    // Save Slots
+    // FEATURE 1: LIVE SLOT LIST SYNC
     document.getElementById('saveSlotlistBtn').addEventListener('click', () => {
       const t = getCurrentTourney();
       if (!t) return;
       for (let i = 1; i <= 12; i++) {
         t.registeredSlots[i] = document.getElementById(`slot_input_${i}`).value.trim() || `Team ${i}`;
       }
+
+      t.matchHistory.forEach(matchList => {
+        matchList.forEach(item => {
+          if (item.slot && t.registeredSlots[item.slot]) {
+            item.teamName = t.registeredSlots[item.slot];
+          }
+        });
+      });
+
       saveAllTournaments();
-      logMsg('12 Slots Saved & Updated.');
+      if (t.lobbyData.length > 0) renderLobbyCards(t.lobbyData);
+      if (t.matchHistory.length > 0) {
+        renderCumulativeOS();
+        const currentSelIndex = parseInt(document.getElementById('reviewMatchSelector').value) || (t.matchHistory.length - 1);
+        renderReviewSection(currentSelIndex);
+      }
+      logMsg('Slots updated & instantly synced across all tables, cards, and review sections!');
     });
 
-    // Preset Change
-    document.getElementById('presetSelect').addEventListener('change', (e) => {
+    // ZIP EXPORT FOR SLOTS
+    document.getElementById('exportSlotsZipBtn').addEventListener('click', async () => {
       const t = getCurrentTourney();
       if (!t) return;
-      t.preset = e.target.value;
+
+      for (let i = 1; i <= 12; i++) {
+        t.registeredSlots[i] = document.getElementById(`slot_input_${i}`).value.trim() || `Team ${i}`;
+      }
       saveAllTournaments();
-      if (t.matchHistory.length > 0) renderCumulativeOS();
+
+      const zip = new JSZip();
+      const exportPayload = {
+        version: '1.0',
+        preset: t.preset,
+        registeredSlots: t.registeredSlots,
+        exportedAt: new Date().toISOString()
+      };
+
+      zip.file('slots_config.json', JSON.stringify(exportPayload, null, 2));
+
+      let txtData = `TOURNAMENT SLOTS LIST (1-12)\n============================\n`;
+      for (let i = 1; i <= 12; i++) {
+        txtData += `SLOT ${i}: ${t.registeredSlots[i]}\n`;
+      }
+      zip.file('slots_list.txt', txtData);
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const safeName = (t.name || 'tournament').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${safeName}_slots.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      logMsg(`Slots exported as ${safeName}_slots.zip!`);
     });
 
-    // Compress Image
+    // ZIP IMPORT FOR SLOTS
+    document.getElementById('importSlotsZipInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const t = getCurrentTourney();
+      if (!t) return;
+
+      try {
+        const zip = await JSZip.loadAsync(file);
+        let importedJson = null;
+
+        if (zip.file('slots_config.json')) {
+          const content = await zip.file('slots_config.json').async('string');
+          importedJson = JSON.parse(content);
+        } else {
+          for (const filename of Object.keys(zip.files)) {
+            if (filename.endsWith('.json')) {
+              const content = await zip.file(filename).async('string');
+              importedJson = JSON.parse(content);
+              break;
+            }
+          }
+        }
+
+        if (!importedJson || !importedJson.registeredSlots) {
+          throw new Error('Valid slots configuration file nahi mili zip ke andar.');
+        }
+
+        for (let i = 1; i <= 12; i++) {
+          if (importedJson.registeredSlots[i]) {
+            t.registeredSlots[i] = importedJson.registeredSlots[i];
+            const inp = document.getElementById(`slot_input_${i}`);
+            if (inp) inp.value = importedJson.registeredSlots[i];
+          }
+        }
+
+        t.matchHistory.forEach(matchList => {
+          matchList.forEach(item => {
+            if (item.slot && t.registeredSlots[item.slot]) {
+              item.teamName = t.registeredSlots[item.slot];
+            }
+          });
+        });
+
+        saveAllTournaments();
+        if (t.lobbyData.length > 0) renderLobbyCards(t.lobbyData);
+        if (t.matchHistory.length > 0) {
+          renderCumulativeOS();
+          const currentSelIndex = parseInt(document.getElementById('reviewMatchSelector').value) || (t.matchHistory.length - 1);
+          renderReviewSection(currentSelIndex);
+        }
+
+        logMsg(`Slots successfully imported from zip & applied live!`);
+        alert('Slots successfully import ho gayi hain!');
+      } catch (err) {
+        logMsg('Import Error: ' + err.message, true);
+        alert('Zip read error: ' + err.message);
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    // FEATURE 2: EDIT INDIVIDUAL SLOT ROSTER & CROPPED OCR
+    window.openEditSlotModal = function(slotNumber) {
+      const t = getCurrentTourney();
+      document.getElementById('editingSlotNumber').value = slotNumber;
+      document.getElementById('editSlotModalTitle').innerText = `Edit Slot ${slotNumber} (${t.registeredSlots[slotNumber]})`;
+
+      const existingSlot = t.lobbyData.find(d => parseInt(d.slot) === slotNumber);
+      document.getElementById('manualSlotPlayersInput').value = existingSlot && existingSlot.players ? existingSlot.players.join(', ') : '';
+      document.getElementById('singleSlotCropInput').value = '';
+      document.getElementById('editSlotModal').classList.remove('hidden');
+    };
+
+    window.closeEditSlotModal = function() {
+      document.getElementById('editSlotModal').classList.add('hidden');
+    };
+
+    document.getElementById('saveManualSlotBtn').addEventListener('click', () => {
+      const t = getCurrentTourney();
+      const slotNum = parseInt(document.getElementById('editingSlotNumber').value);
+      const rawText = document.getElementById('manualSlotPlayersInput').value;
+      const players = rawText.split(',').map(p => p.trim()).filter(Boolean);
+
+      let slotItem = t.lobbyData.find(d => parseInt(d.slot) === slotNum);
+      if (slotItem) {
+        slotItem.players = players;
+      } else {
+        t.lobbyData.push({ slot: slotNum, players: players });
+      }
+
+      saveAllTournaments();
+      renderLobbyCards(t.lobbyData);
+      closeEditSlotModal();
+      logMsg(`Slot ${slotNum} roster manually updated.`);
+    });
+
+    document.getElementById('extractSingleCropBtn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('singleSlotCropInput');
+      if (!fileInput.files || fileInput.files.length === 0) return alert('Select cropped image first!');
+
+      const spinner = document.getElementById('singleCropSpinner');
+      const text = document.getElementById('singleCropBtnText');
+      spinner.classList.remove('hidden');
+      text.innerText = 'Reading...';
+
+      const fd = new FormData();
+      fd.append('lobbyImages', await compressImageFast(fileInput.files[0]));
+
+      try {
+        const res = await fetch('/api/extract-lobby', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+
+        const extractedPlayers = [];
+        json.data.forEach(item => {
+          if (item.players && Array.isArray(item.players)) {
+            extractedPlayers.push(...item.players);
+          }
+        });
+
+        if (extractedPlayers.length > 0) {
+          document.getElementById('manualSlotPlayersInput').value = extractedPlayers.join(', ');
+          logMsg(`Extracted ${extractedPlayers.length} IGNs from cropped image.`);
+        } else {
+          alert('No player IGNs recognized. Try manual typing.');
+        }
+      } catch (err) {
+        alert('OCR Error: ' + err.message);
+      } finally {
+        spinner.classList.add('hidden');
+        text.innerText = 'AI OCR';
+      }
+    });
+
+    function renderLobbyCards(data) {
+      const t = getCurrentTourney();
+      const container = document.getElementById('lobbyGraphic');
+      container.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const slotItem = data.find(d => parseInt(d.slot) === i);
+        const team = t?.registeredSlots[i] || `Slot ${i}`;
+        const players = slotItem?.players || [];
+        container.innerHTML += `
+          <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 sm:p-3 relative">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[9px] font-black bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">SLOT ${i}</span>
+              <button onclick="openEditSlotModal(${i})" class="text-[10px] bg-slate-800 hover:bg-amber-500 hover:text-slate-950 px-1.5 py-0.5 rounded font-bold transition-all text-slate-400">✏️ Edit</button>
+            </div>
+            <div class="font-bold text-xs text-slate-100 truncate mb-1">${team}</div>
+            <div class="space-y-0.5 text-[10px] text-slate-400">
+              ${players.length ? players.map(p => `<div class="truncate bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800/60 font-mono">👤 ${p}</div>`).join('') : '<div class="text-[9px] text-slate-600 font-mono italic">No players mapped</div>'}
+            </div>
+          </div>
+        `;
+      }
+      document.getElementById('lobbyContainer').classList.remove('hidden');
+    }
+
     async function compressImageFast(file) {
       return new Promise((resolve) => {
         try {
@@ -449,7 +720,6 @@
       });
     }
 
-    // Step 2: Lobby Extract
     document.getElementById('processLobbyBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -476,7 +746,7 @@
         t.lobbyData = json.data;
         saveAllTournaments();
         renderLobbyCards(t.lobbyData);
-        logMsg(`Master Lobby Saved: ${t.lobbyData.length} rosters registered.`);
+        logMsg(`Master Lobby Saved: ${t.lobbyData.length} slots registered.`);
       } catch (err) {
         logMsg('Lobby error: ' + err.message, true);
       } finally {
@@ -486,66 +756,57 @@
       }
     });
 
-    function renderLobbyCards(data) {
+    function checkPlayerLobbyMatch(ign) {
       const t = getCurrentTourney();
-      const container = document.getElementById('lobbyGraphic');
-      container.innerHTML = '';
-      for (let i = 1; i <= 12; i++) {
-        const slotItem = data.find(d => parseInt(d.slot) === i);
-        const team = t?.registeredSlots[i] || `Slot ${i}`;
-        const players = slotItem?.players || [];
-        container.innerHTML += `
-          <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 sm:p-3">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-[9px] font-black bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">SLOT ${i}</span>
-              <span class="font-bold text-xs text-slate-100 truncate">${team}</span>
-            </div>
-            <div class="space-y-0.5 text-[10px] text-slate-400">
-              ${players.length ? players.map(p => `<div class="truncate bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800/60 font-mono">👤 ${p}</div>`).join('') : '<div class="text-[9px] text-slate-600 font-mono">Unmapped</div>'}
-            </div>
-          </div>
-        `;
-      }
-      document.getElementById('lobbyContainer').classList.remove('hidden');
-    }
-
-    // Matching Algorithm
-    function findMatchedSlot(entry) {
-      const t = getCurrentTourney();
-      if (!t) return null;
-
-      const entryRaw = (entry.identifier || entry.teamIdentifier || entry.teamName || '');
-      const entryClean = cleanString(entryRaw);
-      const playersInResult = (entry.playerStats || []).map(p => cleanString(p.ign || ''));
-
-      for (let slot = 1; slot <= 12; slot++) {
-        const regClean = cleanString(t.registeredSlots[slot]);
-        if (regClean && regClean.length > 2 && (entryClean.includes(regClean) || regClean.includes(entryClean))) {
-          return slot;
-        }
-      }
+      if (!t || !t.lobbyData) return null;
+      const ignClean = cleanString(ign);
+      if (ignClean.length < 3) return null;
 
       for (const slotObj of t.lobbyData) {
         const slotNum = parseInt(slotObj.slot);
         if (slotObj.players && Array.isArray(slotObj.players)) {
-          for (const player of slotObj.players) {
-            const pClean = cleanString(player);
-            if (pClean.length >= 3) {
-              if (entryClean.includes(pClean) || pClean.includes(entryClean)) return slotNum;
-              for (const rPlayer of playersInResult) {
-                if (rPlayer.length >= 3 && (rPlayer.includes(pClean) || pClean.includes(rPlayer))) return slotNum;
-              }
+          for (const lPlayer of slotObj.players) {
+            const lClean = cleanString(lPlayer);
+            if (lClean.length >= 3 && (ignClean.includes(lClean) || lClean.includes(ignClean))) {
+              return slotNum;
             }
           }
         }
       }
-
-      const rankNum = parseInt(entry.rank);
-      if (rankNum >= 1 && rankNum <= 12) return rankNum;
       return null;
     }
 
-    // Step 3: Match Result Extract
+    function findSquadSlot(entry) {
+      const t = getCurrentTourney();
+      if (!t) return null;
+
+      const slotVotes = {};
+      (entry.playerStats || []).forEach(p => {
+        const matched = checkPlayerLobbyMatch(p.ign);
+        if (matched) slotVotes[matched] = (slotVotes[matched] || 0) + 2;
+      });
+
+      const entryRaw = cleanString(entry.identifier || entry.teamIdentifier || '');
+      if (entryRaw.length >= 3) {
+        for (let s = 1; s <= 12; s++) {
+          const regClean = cleanString(t.registeredSlots[s]);
+          if (regClean.length >= 3 && (entryRaw.includes(regClean) || regClean.includes(entryRaw))) {
+            slotVotes[s] = (slotVotes[s] || 0) + 3;
+          }
+        }
+      }
+
+      let bestSlot = null;
+      let max = 0;
+      for (const [slot, v] of Object.entries(slotVotes)) {
+        if (v > max) { max = v; bestSlot = parseInt(slot); }
+      }
+      if (bestSlot) return bestSlot;
+
+      const fallback = parseInt(entry.rank);
+      return (fallback >= 1 && fallback <= 12) ? fallback : null;
+    }
+
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -569,41 +830,53 @@
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
 
-        const seen = new Set();
-        const cleanResults = [];
+        const rankMap = new Map();
         json.data.forEach(item => {
           const r = parseInt(item.rank);
-          if (r && !seen.has(r)) {
-            seen.add(r);
-            cleanResults.push(item);
-          }
+          if (r && !rankMap.has(r)) rankMap.set(r, item);
         });
 
         const verifiedMatchData = [];
-        cleanResults.forEach(r => {
-          const matchedSlot = findMatchedSlot(r);
-          const kills = r.kills !== undefined ? parseInt(r.kills) : (parseInt(r.totalKills) || 0);
+        const usedSlots = new Set();
 
-          if (matchedSlot) {
+        for (const [rank, item] of rankMap.entries()) {
+          const squadSlot = findSquadSlot(item);
+          if (squadSlot && !usedSlots.has(squadSlot)) {
+            usedSlots.add(squadSlot);
+
+            const playersList = (item.playerStats && item.playerStats.length > 0)
+              ? item.playerStats
+              : [{ ign: item.identifier || `Player`, kills: parseInt(item.kills) || 0 }];
+
+            const processedPlayers = playersList.map(p => {
+              const detectedSlot = checkPlayerLobbyMatch(p.ign);
+              const isMatched = (detectedSlot === squadSlot);
+              return {
+                ign: p.ign || 'Unknown',
+                kills: parseInt(p.kills) || 0,
+                detectedSlot: detectedSlot || squadSlot,
+                isMatched: isMatched,
+                isApproved: isMatched
+              };
+            });
+
             verifiedMatchData.push({
-              slot: matchedSlot,
-              teamName: t.registeredSlots[matchedSlot] || `Slot ${matchedSlot}`,
-              rank: parseInt(r.rank),
-              kills: kills
+              slot: squadSlot,
+              teamName: t.registeredSlots[squadSlot] || `Slot ${squadSlot}`,
+              rank: rank,
+              players: processedPlayers
             });
           }
-        });
+        }
 
         t.matchHistory.push(verifiedMatchData);
         saveAllTournaments();
-        renderCumulativeOS();
+        refreshMatchState();
 
         document.getElementById('nextMatchActionArea').classList.remove('hidden');
-        document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} recorded!`;
+        document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} extracted & ready for review!`;
         document.getElementById('addNextMatchBtn').querySelector('span').innerText = `+ Add Match ${t.matchHistory.length + 1}`;
-        document.getElementById('matchesRecordedBadge').innerText = `Matches: ${t.matchHistory.length}`;
-        document.getElementById('matchCounterBadge').innerText = `Matches: ${t.matchHistory.length}`;
-        logMsg(`Match ${t.matchHistory.length} recorded and saved to tournament.`);
+        logMsg(`Match ${t.matchHistory.length} loaded. Review unknown players below if highlighted.`);
       } catch (err) {
         logMsg('Scoreboard error: ' + err.message, true);
       } finally {
@@ -619,8 +892,96 @@
       document.getElementById('currentMatchHeader').innerText = `MATCH ${t.matchHistory.length + 1} Result`;
       document.getElementById('resultInput').value = '';
       document.getElementById('nextMatchActionArea').classList.add('hidden');
-      logMsg(`Ready for Match ${t.matchHistory.length + 1}. Upload screenshots.`);
+      logMsg(`Ready for Match ${t.matchHistory.length + 1}.`);
     });
+
+    // FEATURE 3: SIDE-BY-SIDE LOBBY VS END SS PLAYER REVIEW
+    function renderReviewSection(mIndex) {
+      const t = getCurrentTourney();
+      const section = document.getElementById('matchReviewSection');
+      const grid = document.getElementById('matchReviewCardsGrid');
+
+      if (!t || !t.matchHistory[mIndex]) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      grid.innerHTML = '';
+      section.classList.remove('hidden');
+
+      t.matchHistory[mIndex].forEach((squad, sIndex) => {
+        const squadCard = document.createElement('div');
+        squadCard.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5 shadow flex flex-col justify-between';
+
+        let totalSquadKills = 0;
+        let playersHtml = '';
+
+        const lobbySlotObj = (t.lobbyData || []).find(d => parseInt(d.slot) === squad.slot);
+        const lobbyPlayerList = lobbySlotObj?.players || [];
+
+        squad.players.forEach((p, pIndex) => {
+          if (p.isApproved) totalSquadKills += p.kills;
+
+          const isHighlight = !p.isMatched;
+          const bgClass = isHighlight
+            ? (p.isApproved ? 'bg-amber-500/10 border-amber-500/50' : 'bg-amber-950/30 border-amber-500/40 text-amber-200')
+            : 'bg-slate-900 border-slate-800 text-slate-300';
+
+          playersHtml += `
+            <div class="flex items-center justify-between p-1.5 rounded-lg border ${bgClass} text-xs transition-all">
+              <div class="flex flex-col min-w-0 pr-2">
+                <span class="font-mono truncate font-semibold ${!p.isApproved && isHighlight ? 'line-through opacity-60' : ''}">👤 ${p.ign}</span>
+                <span class="text-[9px] ${p.isMatched ? 'text-emerald-400' : 'text-amber-400 font-bold'}">
+                  ${p.isMatched ? '✓ Matched to Slot ' + squad.slot : '⚠ Unregistered / Sub'}
+                </span>
+              </div>
+              <div class="flex items-center space-x-1.5 shrink-0">
+                <span class="font-mono font-bold text-xs bg-black/40 px-1.5 py-0.5 rounded text-amber-400">${p.kills}k</span>
+                <button onclick="togglePlayerApproval(${mIndex}, ${sIndex}, ${pIndex}, true)" class="w-6 h-6 rounded flex items-center justify-center font-black text-xs transition-all ${p.isApproved ? 'bg-emerald-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">✓</button>
+                <button onclick="togglePlayerApproval(${mIndex}, ${sIndex}, ${pIndex}, false)" class="w-6 h-6 rounded flex items-center justify-center font-black text-xs transition-all ${!p.isApproved ? 'bg-rose-500 text-white shadow' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">✕</button>
+              </div>
+            </div>
+          `;
+        });
+
+        squadCard.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5 mb-2">
+              <div class="flex items-center space-x-1.5">
+                <span class="text-[10px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">#${squad.rank}</span>
+                <span class="font-bold text-xs text-slate-100 truncate max-w-[130px]">${squad.teamName}</span>
+              </div>
+              <span class="text-[11px] font-mono font-black text-amber-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                Kills: ${totalSquadKills}
+              </span>
+            </div>
+
+            <!-- SIDE-BY-SIDE: LOBBY ROSTER VS END SS ROSTER -->
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 mb-2 space-y-1">
+              <span class="text-[9px] uppercase font-bold text-blue-400 block tracking-wider">Lobby Roster (Slot ${squad.slot}):</span>
+              <div class="text-[10px] font-mono text-slate-400 truncate">
+                ${lobbyPlayerList.length > 0 ? lobbyPlayerList.join(', ') : '<span class="italic text-slate-600">No lobby players registered</span>'}
+              </div>
+            </div>
+
+            <span class="text-[9px] uppercase font-bold text-emerald-400 block tracking-wider mb-1">End SS Detected Players:</span>
+            <div class="space-y-1.5">${playersHtml}</div>
+          </div>
+        `;
+        grid.appendChild(squadCard);
+      });
+    }
+
+    window.togglePlayerApproval = function(mIndex, sIndex, pIndex, approved) {
+      const t = getCurrentTourney();
+      if (!t) return;
+
+      t.matchHistory[mIndex][sIndex].players[pIndex].isApproved = approved;
+      saveAllTournaments();
+      renderReviewSection(mIndex);
+      renderCumulativeOS();
+      logMsg(`Updated kill status for player "${t.matchHistory[mIndex][sIndex].players[pIndex].ign}".`);
+    };
 
     function renderCumulativeOS() {
       const t = getCurrentTourney();
@@ -648,12 +1009,14 @@
           if (totals[m.slot]) {
             totals[m.slot].matchesPlayed += 1;
             const place = rule.placements[m.rank] !== undefined ? rule.placements[m.rank] : 0;
-            const killPoints = m.kills * rule.kill;
+
+            const squadKills = m.players.reduce((sum, p) => sum + (p.isApproved ? p.kills : 0), 0);
+            const killPoints = squadKills * rule.kill;
 
             totals[m.slot].placePts += place;
             totals[m.slot].killPts += killPoints;
             totals[m.slot].total += (place + killPoints);
-            if (m.rank === 1 || place === 12) totals[m.slot].wins += 1;
+            if (m.rank === 1) totals[m.slot].wins += 1;
           }
         });
       });
@@ -698,7 +1061,6 @@
       });
     });
 
-    // Start App
     window.addEventListener('DOMContentLoaded', () => {
       loadAllTournaments();
     });
