@@ -48,11 +48,12 @@ function parseCleanJson(text) {
   return JSON.parse(cleaned.substring(start, end + 1));
 }
 
+// SMART KEY SWITCHING (Catches 503, 500, 429 & Overload)
 async function callGeminiWithKeyRotation(prompt, parts) {
   if (rawKeys.length === 0) throw new Error('No API Keys configured');
 
   let attempts = 0;
-  const maxAttempts = rawKeys.length * 2;
+  const maxAttempts = rawKeys.length * 3;
 
   while (attempts < maxAttempts) {
     const currentKey = rawKeys[keyIndex % rawKeys.length];
@@ -68,16 +69,13 @@ async function callGeminiWithKeyRotation(prompt, parts) {
       const result = await model.generateContent([prompt, ...parts]);
       return result.response.text();
     } catch (err) {
-      console.warn(`[Key Switch] Key index ${(keyIndex - 1) % rawKeys.length + 1} hit error:`, err.message);
-      if (err.message && err.message.includes('429')) {
-        attempts++;
-        await new Promise(r => setTimeout(r, 1000));
-        continue;
-      }
-      throw err;
+      attempts++;
+      console.warn(`[Key Switch] Key #${(keyIndex - 1) % rawKeys.length + 1} failed: ${err.message}. Rotating...`);
+      // 503 (Overload) ya 429 (Rate limit) ya general network glitch hone par 500ms ruk ke switch karega
+      await new Promise(r => setTimeout(r, 600));
     }
   }
-  throw new Error('All API keys exhausted or rate limited.');
+  throw new Error('All API keys hit quota or Gemini service is overloaded. Please retry in 10 seconds.');
 }
 
 // 1. Master Lobby Extract
@@ -144,7 +142,6 @@ app.post('/api/extract-result', upload.array('resultImages', 5), async (req, res
     const raw = await callGeminiWithKeyRotation(prompt, parts);
     const parsed = parseCleanJson(raw);
 
-    // Server-side strict rank deduplication (Rank 1-12 only once)
     const uniqueMap = new Map();
     parsed.forEach(item => {
       const cleanRank = parseInt(String(item.rank).replace(/[^0-9]/g, ''), 10);
