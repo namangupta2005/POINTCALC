@@ -8,6 +8,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Rajdhani:wght@600;700;800&family=Inter:wght@700;800;900&display=swap');
+    
+    .font-teko { font-family: 'Teko', sans-serif; }
+    .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+    .font-team { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
     .btn-spinner {
       border: 2px solid rgba(255, 255, 255, 0.2);
       border-top-color: #ffffff;
@@ -18,6 +24,18 @@
       display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Clean Esports Pill Row - Zero clipping */
+    .esports-pill-row {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      padding: 4px 14px;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-2.5 sm:p-4 md:p-8 font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
@@ -61,21 +79,12 @@
           </button>
           <div>
             <h1 class="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-wide truncate max-w-[240px] sm:max-w-md" id="activeTourneyName">Tournament</h1>
-            <p class="text-[10px] sm:text-xs text-slate-400">Auto-Sync & Roster Cross-Check Active</p>
+            <p class="text-[10px] sm:text-xs text-slate-400">Auto-Sync & Overload Protection Active</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-[10px] sm:text-xs bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-emerald-400 font-mono" id="matchesRecordedBadge">Matches: 0</span>
         </div>
-      </div>
-
-      <!-- STATUS LOG -->
-      <div class="bg-black/60 border border-slate-800 rounded-xl p-3 font-mono text-[11px] sm:text-xs space-y-1">
-        <div class="flex justify-between items-center text-slate-400 font-bold border-b border-slate-800 pb-1">
-          <span>STATUS LOG:</span>
-          <button onclick="document.getElementById('debugLog').innerText = 'Ready.'" class="text-[10px] text-amber-400 hover:underline">Clear</button>
-        </div>
-        <div id="debugLog" class="text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all">Ready. Setup Slots & Lobby.</div>
       </div>
 
       <!-- STEP 1: REGISTERED SLOTS (WITH ZIP EXPORT & IMPORT) -->
@@ -120,12 +129,16 @@
             <span id="lobbyBtnText">Lock Lobby</span>
           </button>
         </div>
+
+        <!-- SECTION-SPECIFIC STATUS MSG FOR LOBBY -->
+        <div id="lobbySectionMsg" class="hidden p-2 rounded-lg text-xs font-mono"></div>
+
         <div id="lobbyContainer" class="hidden space-y-3 pt-3 border-t border-slate-800">
           <div id="lobbyGraphic" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800"></div>
         </div>
       </div>
 
-      <!-- STEP 3: MATCH PROCESSOR -->
+      <!-- STEP 3: MATCH PROCESSOR WITH REVERSE COUNTDOWN -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <div class="flex items-center space-x-2 sm:space-x-3">
@@ -153,6 +166,23 @@
           </button>
         </div>
 
+        <!-- REVERSE COUNTDOWN TIMER -->
+        <div id="reverseTimerBox" class="hidden bg-slate-950 border border-emerald-500/30 p-3 rounded-xl space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-emerald-400 font-bold flex items-center space-x-1">
+              <span class="animate-spin text-sm">⚙️</span>
+              <span id="timerStatusText">AI Vision Processing Scoreboard...</span>
+            </span>
+            <span class="font-mono text-amber-400 font-bold text-sm" id="countdownDigits">15s</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div id="timerProgressBar" class="bg-gradient-to-r from-emerald-500 to-amber-400 h-full w-0 transition-all duration-300"></div>
+          </div>
+        </div>
+
+        <!-- SECTION-SPECIFIC STATUS MSG FOR MATCH RESULT -->
+        <div id="resultSectionMsg" class="hidden p-2.5 rounded-lg text-xs font-mono"></div>
+
         <div id="nextMatchActionArea" class="hidden pt-3 border-t border-slate-800 flex flex-col sm:flex-row gap-2 justify-between items-center">
           <div class="text-xs text-emerald-400 font-bold" id="matchProcessedText">Match recorded!</div>
           <button id="addNextMatchBtn" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">
@@ -175,41 +205,66 @@
         <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
-      <!-- OVERALL STANDINGS (OS) -->
+      <!-- OVERALL STANDINGS (OS) - HIGH-END PINK/PURPLE ESPORTS DESIGN -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
-            <p class="text-[10px] sm:text-[11px] text-slate-400">Realtime Point Table</p>
+            <p class="text-[10px] sm:text-[11px] text-slate-400">Custom eSports Edition</p>
           </div>
-          <button id="downloadOsBtn" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider shadow-lg">Download Standings (.png)</button>
+          <button id="downloadOsBtn" class="w-full sm:w-auto bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">Download Standings (.png)</button>
         </div>
 
-        <div id="osGraphic" class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-2xl">
-          <div class="border-b border-slate-800 pb-3 mb-3 flex justify-between items-center">
-            <div>
-              <h3 class="text-lg sm:text-2xl md:text-3xl font-black text-amber-400 tracking-wider uppercase" id="osTitleDisplay">Overall Standings</h3>
-              <p class="text-[10px] sm:text-xs text-slate-400 font-mono" id="osGraphicSubTitle">CUMULATIVE SCORES</p>
+        <!-- THE CANVAS WRAPPER (pt.jpeg replicated) -->
+        <div id="osGraphic" class="relative w-full max-w-[950px] mx-auto p-4 sm:p-8 rounded-3xl overflow-hidden shadow-2xl" style="background: radial-gradient(circle at center, #2e0842 0%, #150222 55%, #08000f 100%);">
+          
+          <!-- Top Header Brand Section -->
+          <div class="flex justify-between items-center border-b border-fuchsia-500/30 pb-3 mb-4">
+            <div class="flex items-center space-x-2">
+              <span class="text-white text-xl sm:text-2xl font-black italic tracking-tighter">F<span class="text-pink-500">MAX</span></span>
             </div>
-            <span class="text-[10px] sm:text-xs bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1 rounded-full font-mono font-bold" id="totalMatchesBadge">MATCHES: 0</span>
+            <div class="text-center">
+              <span class="text-[10px] sm:text-xs tracking-[0.3em] font-black text-fuchsia-300 uppercase font-rajdhani">FINAL STRIKE ESPORTS</span>
+            </div>
+            <div class="flex items-center space-x-1 text-right">
+              <span class="text-xs sm:text-sm font-black italic text-amber-400 font-teko">FINAL STRIKE</span>
+            </div>
           </div>
 
-          <div class="overflow-x-auto -mx-1 sm:mx-0">
-            <table class="w-full text-left border-collapse min-w-[500px]">
-              <thead>
-                <tr class="border-b border-slate-800 text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider">
-                  <th class="py-2.5 px-2 sm:px-3 text-center w-12">#</th>
-                  <th class="py-2.5 px-2 sm:px-3 min-w-[120px]">Team</th>
-                  <th class="py-2.5 px-2 sm:px-3 text-center">M</th>
-                  <th class="py-2.5 px-2 sm:px-3 text-center">W</th>
-                  <th class="py-2.5 px-2 sm:px-3 text-center">Place</th>
-                  <th class="py-2.5 px-2 sm:px-3 text-center">Kills</th>
-                  <th class="py-2.5 px-2 sm:px-3 text-right font-black text-amber-400">Total</th>
-                </tr>
-              </thead>
-              <tbody id="osTableBody" class="divide-y divide-slate-800 text-xs sm:text-sm"></tbody>
-            </table>
+          <!-- Big Neon Title -->
+          <div class="text-center my-3 sm:my-5">
+            <h2 class="text-xs sm:text-sm font-black tracking-[0.4em] text-pink-400 uppercase font-rajdhani" id="osGraphicSubTitle">OVERALL</h2>
+            <h1 class="text-3xl sm:text-5xl md:text-6xl font-black italic tracking-wider text-white uppercase font-teko" style="text-shadow: 0 0 20px rgba(236,72,153,0.6);" id="osTitleDisplay">
+              STANDINGS
+            </h1>
           </div>
+
+          <!-- Table Header -->
+          <div class="flex items-center text-[10px] sm:text-xs font-black tracking-wider text-fuchsia-300 uppercase px-4 py-1.5 font-rajdhani border-b border-fuchsia-900/50 mb-2">
+            <div style="width: 55px; text-align: center;">RANKS</div>
+            <div style="flex: 1; min-width: 0; padding-left: 14px;">TEAM NAMES</div>
+            <div style="width: 50px; text-align: center;">MP</div>
+            <div style="width: 50px; text-align: center;">WINS</div>
+            <div style="width: 50px; text-align: center;">KP</div>
+            <div style="width: 50px; text-align: center;">PP</div>
+            <div style="width: 65px; text-align: center;" class="text-pink-300">TP</div>
+          </div>
+
+          <!-- Rows Container -->
+          <div id="osRowsContainer" class="space-y-1.5"></div>
+
+          <!-- Bottom Socials & Partner Footer -->
+          <div class="mt-6 pt-3 border-t border-fuchsia-500/20 flex flex-wrap justify-between items-center text-[9px] sm:text-[10px] text-fuchsia-200/70 font-rajdhani tracking-wider gap-2">
+            <div class="flex items-center space-x-3">
+              <span>DISCORD: <b class="text-white">FINAL STRIKE ESP</b></span>
+              <span>INSTAGRAM: <b class="text-pink-400">@final.strike.esp</b></span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span>YOUTUBE: <b class="text-white">FINAL STRIKE ESP</b></span>
+              <span class="bg-fuchsia-950/80 border border-fuchsia-500/40 text-[9px] px-2 py-0.5 rounded text-fuchsia-300 font-bold">VISUAL PARTNER</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -275,17 +330,24 @@
     const TOURNAMENTS_KEY = 'pointcalc_tournaments_v5';
     let allTournaments = [];
     let currentTourneyId = null;
+    let reverseTimerInterval = null;
 
     const scoringRules = {
       ff: { placements: { 1: 12, 2: 9, 3: 8, 4: 7, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1, 11: 0, 12: 0 }, kill: 1 },
       bgmi: { placements: { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1, 9: 0, 10: 0, 11: 0, 12: 0 }, kill: 1 }
     };
 
-    function logMsg(msg, isError = false) {
-      const el = document.getElementById('debugLog');
+    function showSectionMsg(sectionId, message, isError = false) {
+      const el = document.getElementById(sectionId);
       if (!el) return;
-      el.className = isError ? 'text-rose-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all' : 'text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-wrap break-all';
-      el.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      el.classList.remove('hidden');
+      if (isError) {
+        el.className = 'p-2.5 rounded-lg text-xs font-mono bg-rose-950/60 border border-rose-500/50 text-rose-300 shadow';
+        el.innerHTML = `⚠️ <b>Error:</b> ${message}`;
+      } else {
+        el.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 shadow';
+        el.innerHTML = `✓ <b>Success:</b> ${message}`;
+      }
     }
 
     function cleanString(str) {
@@ -387,7 +449,7 @@
       document.getElementById('workspaceView').classList.remove('hidden');
 
       document.getElementById('activeTourneyName').innerText = t.name;
-      document.getElementById('osTitleDisplay').innerText = t.name;
+      document.getElementById('osTitleDisplay').innerText = t.name.toUpperCase();
       document.getElementById('presetSelect').value = t.preset;
 
       renderSlotInputs();
@@ -399,7 +461,6 @@
       }
 
       refreshMatchState();
-      logMsg(`Loaded "${t.name}".`);
     };
 
     function renderSlotInputs() {
@@ -485,7 +546,7 @@
         const currentSelIndex = parseInt(document.getElementById('reviewMatchSelector').value) || (t.matchHistory.length - 1);
         renderReviewSection(currentSelIndex);
       }
-      logMsg('Slots updated & instantly synced across all tables, cards, and review sections!');
+      alert('Slots updated & live synced!');
     });
 
     // ZIP EXPORT FOR SLOTS
@@ -521,8 +582,6 @@
       link.download = `${safeName}_slots.zip`;
       link.click();
       URL.revokeObjectURL(link.href);
-
-      logMsg(`Slots exported as ${safeName}_slots.zip!`);
     });
 
     // ZIP IMPORT FOR SLOTS
@@ -578,17 +637,15 @@
           renderReviewSection(currentSelIndex);
         }
 
-        logMsg(`Slots successfully imported from zip & applied live!`);
         alert('Slots successfully import ho gayi hain!');
       } catch (err) {
-        logMsg('Import Error: ' + err.message, true);
         alert('Zip read error: ' + err.message);
       } finally {
         e.target.value = '';
       }
     });
 
-    // FEATURE 2: EDIT INDIVIDUAL SLOT ROSTER & CROPPED OCR
+    // EDIT INDIVIDUAL SLOT ROSTER
     window.openEditSlotModal = function(slotNumber) {
       const t = getCurrentTourney();
       document.getElementById('editingSlotNumber').value = slotNumber;
@@ -620,7 +677,6 @@
       saveAllTournaments();
       renderLobbyCards(t.lobbyData);
       closeEditSlotModal();
-      logMsg(`Slot ${slotNum} roster manually updated.`);
     });
 
     document.getElementById('extractSingleCropBtn').addEventListener('click', async () => {
@@ -649,7 +705,6 @@
 
         if (extractedPlayers.length > 0) {
           document.getElementById('manualSlotPlayersInput').value = extractedPlayers.join(', ');
-          logMsg(`Extracted ${extractedPlayers.length} IGNs from cropped image.`);
         } else {
           alert('No player IGNs recognized. Try manual typing.');
         }
@@ -720,6 +775,7 @@
       });
     }
 
+    // STEP 2: LOBBY LOCK
     document.getElementById('processLobbyBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -746,9 +802,9 @@
         t.lobbyData = json.data;
         saveAllTournaments();
         renderLobbyCards(t.lobbyData);
-        logMsg(`Master Lobby Saved: ${t.lobbyData.length} slots registered.`);
+        showSectionMsg('lobbySectionMsg', `Master Lobby Locked! Successfully mapped ${t.lobbyData.length} slots.`, false);
       } catch (err) {
-        logMsg('Lobby error: ' + err.message, true);
+        showSectionMsg('lobbySectionMsg', err.message, true);
       } finally {
         spinner.classList.add('hidden');
         text.innerText = 'Lock Lobby';
@@ -807,7 +863,54 @@
       return (fallback >= 1 && fallback <= 12) ? fallback : null;
     }
 
-    // --- STEP 3: RESULT PROCESSOR (ANTI-DUPLICATE SLOT & RANK LOCK) ---
+    // --- REVERSE COUNTDOWN TIMER HELPERS ---
+    function startReverseTimer(seconds = 16) {
+      const timerBox = document.getElementById('reverseTimerBox');
+      const digits = document.getElementById('countdownDigits');
+      const bar = document.getElementById('timerProgressBar');
+      const status = document.getElementById('timerStatusText');
+
+      timerBox.classList.remove('hidden');
+      status.innerText = 'AI Vision Processing Scoreboard...';
+      digits.innerText = `${seconds}s`;
+      bar.style.width = '0%';
+
+      let timeLeft = seconds;
+      const totalTime = seconds;
+
+      clearInterval(reverseTimerInterval);
+      reverseTimerInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft >= 0) {
+          digits.innerText = `${timeLeft}s`;
+          const percent = ((totalTime - timeLeft) / totalTime) * 100;
+          bar.style.width = `${percent}%`;
+        }
+        if (timeLeft <= 3) {
+          status.innerText = 'Structuring Standings & Roster Votes...';
+        }
+      }, 1000);
+    }
+
+    function stopReverseTimer(isSuccess = true) {
+      clearInterval(reverseTimerInterval);
+      const timerBox = document.getElementById('reverseTimerBox');
+      const digits = document.getElementById('countdownDigits');
+      const bar = document.getElementById('timerProgressBar');
+      const status = document.getElementById('timerStatusText');
+
+      if (isSuccess) {
+        digits.innerText = '✓ Done!';
+        bar.style.width = '100%';
+        status.innerText = 'Extraction Complete!';
+        setTimeout(() => timerBox.classList.add('hidden'), 2000);
+      } else {
+        digits.innerText = 'Failed';
+        status.innerText = 'Error occurred during extraction';
+      }
+    }
+
+    // --- STEP 3: RESULT PROCESSOR (ANTI-DUPLICATE & ROBUST) ---
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -821,6 +924,8 @@
       text.innerText = `Calculating...`;
       e.target.disabled = true;
 
+      startReverseTimer(16);
+
       const fd = new FormData();
       for (let i = 0; i < rawFiles.length; i++) {
         fd.append('resultImages', await compressImageFast(rawFiles[i]));
@@ -831,7 +936,6 @@
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
 
-        // 1. Strict Rank Uniqueness
         const rankMap = new Map();
         json.data.forEach(item => {
           const r = parseInt(String(item.rank).replace(/[^0-9]/g, ''), 10);
@@ -851,7 +955,6 @@
 
           let squadSlot = findSquadSlot(item);
 
-          // Agar yeh Slot is match mein pehle hi kisi rank ko mil gaya hai, toh slot ko unassigned karo (Double add rokne ke liye)
           if (squadSlot && usedSlotsInThisMatch.has(squadSlot)) {
             squadSlot = null;
           }
@@ -889,12 +992,16 @@
         saveAllTournaments();
         refreshMatchState();
 
+        stopReverseTimer(true);
+
         document.getElementById('nextMatchActionArea').classList.remove('hidden');
         document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} extracted cleanly!`;
         document.getElementById('addNextMatchBtn').querySelector('span').innerText = `+ Add Match ${t.matchHistory.length + 1}`;
-        logMsg(`Match ${t.matchHistory.length} recorded. Deduplication verified.`);
+        
+        showSectionMsg('resultSectionMsg', `Match ${t.matchHistory.length} calculated & added cleanly to Overall Standings!`, false);
       } catch (err) {
-        logMsg('Scoreboard error: ' + err.message, true);
+        stopReverseTimer(false);
+        showSectionMsg('resultSectionMsg', err.message, true);
       } finally {
         spinner.classList.add('hidden');
         text.innerText = 'Calculate Match';
@@ -908,10 +1015,10 @@
       document.getElementById('currentMatchHeader').innerText = `MATCH ${t.matchHistory.length + 1} Result`;
       document.getElementById('resultInput').value = '';
       document.getElementById('nextMatchActionArea').classList.add('hidden');
-      logMsg(`Ready for Match ${t.matchHistory.length + 1}.`);
+      document.getElementById('resultSectionMsg').classList.add('hidden');
     });
 
-    // --- FEATURE 3: SIDE-BY-SIDE LOBBY VS END SS PLAYER REVIEW & RECOVERY ---
+    // --- SIDE-BY-SIDE LOBBY VS END SS PLAYER REVIEW & RECOVERY ---
     function renderReviewSection(mIndex) {
       const t = getCurrentTourney();
       const section = document.getElementById('matchReviewSection');
@@ -1056,7 +1163,6 @@
       saveAllTournaments();
       renderReviewSection(mIndex);
       renderCumulativeOS();
-      logMsg(`Added Rank #${rank} card manually.`);
     };
 
     window.updatePlayerKillsDirect = function(mIndex, sIndex, pIndex, killsVal) {
@@ -1075,16 +1181,16 @@
       saveAllTournaments();
       renderReviewSection(mIndex);
       renderCumulativeOS();
-      logMsg(`Updated kill status for player "${t.matchHistory[mIndex][sIndex].players[pIndex].ign}".`);
     };
 
+    // --- REPLICATED PT.JPEG DESIGN ENGINE (PERFECT UNCLIPPED BASELINE) ---
     function renderCumulativeOS() {
       const t = getCurrentTourney();
       if (!t) return;
 
       const rule = scoringRules[t.preset] || scoringRules.ff;
-      const tbody = document.getElementById('osTableBody');
-      tbody.innerHTML = '';
+      const container = document.getElementById('osRowsContainer');
+      container.innerHTML = '';
 
       const totals = {};
       for (let s = 1; s <= 12; s++) {
@@ -1119,39 +1225,70 @@
       const leaderBoard = Object.values(totals);
       leaderBoard.sort((a, b) => b.total - a.total || b.killPts - a.killPts || b.wins - a.wins);
 
-      leaderBoard.forEach((row, index) => {
-        const isLeader = index === 0 && row.total > 0;
-        const tr = document.createElement('tr');
-        tr.className = isLeader 
-          ? 'bg-amber-500/15 border-amber-500/30 font-bold' 
-          : (index < 3 ? 'bg-slate-800/40 font-medium' : 'hover:bg-slate-800/20');
+      const pad = (n) => String(n).padStart(2, '0');
 
-        tr.innerHTML = `
-          <td class="py-2.5 px-2 sm:px-3 text-center font-mono ${isLeader ? 'text-amber-400 font-black' : 'text-slate-400'}">#${index + 1}</td>
-          <td class="py-2.5 px-2 sm:px-3 text-slate-100 font-bold flex items-center space-x-1.5 truncate">
-            <span class="truncate">${row.teamName}</span>
-            ${isLeader ? '<span class="text-[9px] bg-amber-400 text-slate-950 font-black px-1 py-0.2 rounded">👑</span>' : ''}
-          </td>
-          <td class="py-2.5 px-2 sm:px-3 text-center text-slate-300 font-mono">${row.matchesPlayed}</td>
-          <td class="py-2.5 px-2 sm:px-3 text-center font-mono ${row.wins > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}">${row.wins}</td>
-          <td class="py-2.5 px-2 sm:px-3 text-center text-slate-300 font-mono">${row.placePts}</td>
-          <td class="py-2.5 px-2 sm:px-3 text-center text-slate-300 font-mono">${row.killPts}</td>
-          <td class="py-2.5 px-2 sm:px-3 text-right font-mono font-black ${isLeader ? 'text-amber-400 text-sm' : 'text-slate-100'}">${row.total}</td>
+      leaderBoard.forEach((row, index) => {
+        const isFirst = index === 0;
+        const rowDiv = document.createElement('div');
+        
+        rowDiv.className = `esports-pill-row ${isFirst ? 'ring-2 ring-pink-500' : ''}`;
+        
+        rowDiv.innerHTML = `
+          <div style="width: 55px; text-align: center;" class="font-black text-lg text-fuchsia-950 font-rajdhani shrink-0">
+            ${pad(index + 1)}
+          </div>
+          <div style="flex: 1; min-width: 0; padding: 0 14px; display: flex; align-items: baseline;">
+            <span style="display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; padding-bottom: 2px; font-size: 15px; font-weight: 900;" class="font-team uppercase text-slate-950 tracking-normal sm:text-base">
+              ${row.teamName}
+            </span>
+            ${isFirst ? '<span style="font-size: 14px; line-height: 1; margin-left: 6px;" class="shrink-0">👑</span>' : ''}
+          </div>
+          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
+            ${pad(row.matchesPlayed)}
+          </div>
+          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
+            ${row.wins > 0 ? pad(row.wins) : '--'}
+          </div>
+          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
+            ${pad(row.killPts)}
+          </div>
+          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
+            ${pad(row.placePts)}
+          </div>
+          <div style="width: 65px; text-align: center;" class="font-black text-lg text-fuchsia-900 font-rajdhani shrink-0">
+            ${pad(row.total)}
+          </div>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(rowDiv);
       });
 
-      document.getElementById('osGraphicSubTitle').innerText = `MATCH 1 TO ${t.matchHistory.length}`;
-      document.getElementById('totalMatchesBadge').innerText = `MATCHES: ${t.matchHistory.length}`;
+      document.getElementById('osGraphicSubTitle').innerText = `MATCH 1 TO ${t.matchHistory.length} • OVERALL`;
       document.getElementById('osSection').classList.remove('hidden');
     }
 
-    document.getElementById('downloadOsBtn').addEventListener('click', () => {
+    // High Quality Export without font cutting
+    document.getElementById('downloadOsBtn').addEventListener('click', async () => {
       const t = getCurrentTourney();
-      html2canvas(document.getElementById('osGraphic'), { scale: 2, backgroundColor: '#020617' }).then(cv => {
+      const graphic = document.getElementById('osGraphic');
+
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+
+      html2canvas(graphic, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: '#08000f',
+        logging: false,
+        onclone: (clonedDoc) => {
+          const target = clonedDoc.getElementById('osGraphic');
+          target.style.width = '1000px';
+          target.style.maxWidth = '1000px';
+        }
+      }).then(cv => {
         const link = document.createElement('a');
-        link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_final.png`;
-        link.href = cv.toDataURL();
+        link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_final_strike.png`;
+        link.href = cv.toDataURL('image/png', 1.0);
         link.click();
       });
     });
