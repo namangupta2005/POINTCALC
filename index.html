@@ -166,7 +166,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
           <div>
             <h3 class="text-xs sm:text-sm font-bold uppercase text-amber-400">Lobby vs End SS Roster Comparison</h3>
-            <p class="text-[10px] text-slate-400">Side-by-side comparison of locked lobby players vs players detected in the end screenshot.</p>
+            <p class="text-[10px] text-slate-400">Side-by-side comparison. Use dropdown to adjust slot or click + to add missing ranks.</p>
           </div>
           <div class="flex items-center space-x-2">
             <select id="reviewMatchSelector" onchange="renderReviewSection(parseInt(this.value))" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-amber-400 font-mono outline-none"></select>
@@ -272,7 +272,7 @@
   </div>
 
   <script>
-    const TOURNAMENTS_KEY = 'pointcalc_tournaments_v4';
+    const TOURNAMENTS_KEY = 'pointcalc_tournaments_v5';
     let allTournaments = [];
     let currentTourneyId = null;
 
@@ -807,6 +807,7 @@
       return (fallback >= 1 && fallback <= 12) ? fallback : null;
     }
 
+    // --- STEP 3: RESULT PROCESSOR (NEVER SKIP ANY RANK) ---
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -837,37 +838,40 @@
         });
 
         const verifiedMatchData = [];
-        const usedSlots = new Set();
+        const assignedSlots = new Set();
 
         for (const [rank, item] of rankMap.entries()) {
-          const squadSlot = findSquadSlot(item);
-          if (squadSlot && !usedSlots.has(squadSlot)) {
-            usedSlots.add(squadSlot);
-
-            const playersList = (item.playerStats && item.playerStats.length > 0)
-              ? item.playerStats
-              : [{ ign: item.identifier || `Player`, kills: parseInt(item.kills) || 0 }];
-
-            const processedPlayers = playersList.map(p => {
-              const detectedSlot = checkPlayerLobbyMatch(p.ign);
-              const isMatched = (detectedSlot === squadSlot);
-              return {
-                ign: p.ign || 'Unknown',
-                kills: parseInt(p.kills) || 0,
-                detectedSlot: detectedSlot || squadSlot,
-                isMatched: isMatched,
-                isApproved: isMatched
-              };
-            });
-
-            verifiedMatchData.push({
-              slot: squadSlot,
-              teamName: t.registeredSlots[squadSlot] || `Slot ${squadSlot}`,
-              rank: rank,
-              players: processedPlayers
-            });
+          let squadSlot = findSquadSlot(item);
+          if (squadSlot && assignedSlots.has(squadSlot)) {
+            squadSlot = null;
           }
+          if (squadSlot) assignedSlots.add(squadSlot);
+
+          const playersList = (item.playerStats && item.playerStats.length > 0)
+            ? item.playerStats
+            : [{ ign: item.identifier || `Player`, kills: parseInt(item.kills) || 0 }];
+
+          const processedPlayers = playersList.map(p => {
+            const detectedSlot = checkPlayerLobbyMatch(p.ign);
+            const isMatched = detectedSlot && (detectedSlot === squadSlot);
+            return {
+              ign: p.ign || 'Unknown',
+              kills: parseInt(p.kills) || 0,
+              detectedSlot: detectedSlot || null,
+              isMatched: !!isMatched,
+              isApproved: !!isMatched
+            };
+          });
+
+          verifiedMatchData.push({
+            rank: rank,
+            slot: squadSlot,
+            teamName: squadSlot ? (t.registeredSlots[squadSlot] || `Slot ${squadSlot}`) : 'Unassigned',
+            players: processedPlayers
+          });
         }
+
+        verifiedMatchData.sort((a, b) => a.rank - b.rank);
 
         t.matchHistory.push(verifiedMatchData);
         saveAllTournaments();
@@ -876,7 +880,7 @@
         document.getElementById('nextMatchActionArea').classList.remove('hidden');
         document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} extracted & ready for review!`;
         document.getElementById('addNextMatchBtn').querySelector('span').innerText = `+ Add Match ${t.matchHistory.length + 1}`;
-        logMsg(`Match ${t.matchHistory.length} loaded. Review unknown players below if highlighted.`);
+        logMsg(`Match ${t.matchHistory.length} loaded. Check missing ranks or unassigned slots.`);
       } catch (err) {
         logMsg('Scoreboard error: ' + err.message, true);
       } finally {
@@ -895,7 +899,7 @@
       logMsg(`Ready for Match ${t.matchHistory.length + 1}.`);
     });
 
-    // FEATURE 3: SIDE-BY-SIDE LOBBY VS END SS PLAYER REVIEW
+    // --- FEATURE 3: SIDE-BY-SIDE LOBBY VS END SS PLAYER REVIEW & RECOVERY ---
     function renderReviewSection(mIndex) {
       const t = getCurrentTourney();
       const section = document.getElementById('matchReviewSection');
@@ -909,6 +913,29 @@
       grid.innerHTML = '';
       section.classList.remove('hidden');
 
+      const existingRanks = new Set(t.matchHistory[mIndex].map(x => x.rank));
+      const missingRanks = [];
+      for (let r = 1; r <= 12; r++) {
+        if (!existingRanks.has(r)) missingRanks.push(r);
+      }
+
+      if (missingRanks.length > 0) {
+        const missingBar = document.createElement('div');
+        missingBar.className = 'col-span-full bg-rose-950/40 border border-rose-500/40 p-3 rounded-xl flex flex-wrap items-center justify-between gap-2';
+        missingBar.innerHTML = `
+          <span class="text-xs text-rose-300 font-bold">⚠️ Missing Ranks in SS: ${missingRanks.map(r => `#${r}`).join(', ')}</span>
+          <div class="flex items-center gap-2">
+            <select id="missingRankSelect" class="bg-slate-950 border border-slate-700 text-xs text-amber-400 rounded px-2 py-1 outline-none">
+              ${missingRanks.map(r => `<option value="${r}">Add Rank #${r}</option>`).join('')}
+            </select>
+            <button onclick="addMissingRankCard(${mIndex})" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3 py-1 rounded">
+              + Add Card
+            </button>
+          </div>
+        `;
+        grid.appendChild(missingBar);
+      }
+
       t.matchHistory[mIndex].forEach((squad, sIndex) => {
         const squadCard = document.createElement('div');
         squadCard.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5 shadow flex flex-col justify-between';
@@ -916,7 +943,7 @@
         let totalSquadKills = 0;
         let playersHtml = '';
 
-        const lobbySlotObj = (t.lobbyData || []).find(d => parseInt(d.slot) === squad.slot);
+        const lobbySlotObj = squad.slot ? (t.lobbyData || []).find(d => parseInt(d.slot) === squad.slot) : null;
         const lobbyPlayerList = lobbySlotObj?.players || [];
 
         squad.players.forEach((p, pIndex) => {
@@ -932,11 +959,11 @@
               <div class="flex flex-col min-w-0 pr-2">
                 <span class="font-mono truncate font-semibold ${!p.isApproved && isHighlight ? 'line-through opacity-60' : ''}">👤 ${p.ign}</span>
                 <span class="text-[9px] ${p.isMatched ? 'text-emerald-400' : 'text-amber-400 font-bold'}">
-                  ${p.isMatched ? '✓ Matched to Slot ' + squad.slot : '⚠ Unregistered / Sub'}
+                  ${p.isMatched ? '✓ Slot ' + squad.slot : '⚠ Unregistered / Sub'}
                 </span>
               </div>
               <div class="flex items-center space-x-1.5 shrink-0">
-                <span class="font-mono font-bold text-xs bg-black/40 px-1.5 py-0.5 rounded text-amber-400">${p.kills}k</span>
+                <input type="number" min="0" value="${p.kills}" onchange="updatePlayerKillsDirect(${mIndex}, ${sIndex}, ${pIndex}, this.value)" class="w-12 bg-black/60 border border-slate-700 text-amber-400 font-mono font-bold text-xs text-center rounded py-0.5" />
                 <button onclick="togglePlayerApproval(${mIndex}, ${sIndex}, ${pIndex}, true)" class="w-6 h-6 rounded flex items-center justify-center font-black text-xs transition-all ${p.isApproved ? 'bg-emerald-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">✓</button>
                 <button onclick="togglePlayerApproval(${mIndex}, ${sIndex}, ${pIndex}, false)" class="w-6 h-6 rounded flex items-center justify-center font-black text-xs transition-all ${!p.isApproved ? 'bg-rose-500 text-white shadow' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">✕</button>
               </div>
@@ -944,12 +971,19 @@
           `;
         });
 
+        let slotOptions = `<option value="">-- Assign Slot --</option>`;
+        for (let s = 1; s <= 12; s++) {
+          slotOptions += `<option value="${s}" ${squad.slot === s ? 'selected' : ''}>Slot ${s}: ${t.registeredSlots[s]}</option>`;
+        }
+
         squadCard.innerHTML = `
           <div>
             <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5 mb-2">
               <div class="flex items-center space-x-1.5">
                 <span class="text-[10px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">#${squad.rank}</span>
-                <span class="font-bold text-xs text-slate-100 truncate max-w-[130px]">${squad.teamName}</span>
+                <select onchange="changeSquadAssignedSlot(${mIndex}, ${sIndex}, this.value)" class="bg-slate-900 border border-slate-700 text-xs font-bold text-amber-300 rounded px-1.5 py-0.5 outline-none max-w-[170px]">
+                  ${slotOptions}
+                </select>
               </div>
               <span class="text-[11px] font-mono font-black text-amber-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
                 Kills: ${totalSquadKills}
@@ -958,9 +992,9 @@
 
             <!-- SIDE-BY-SIDE: LOBBY ROSTER VS END SS ROSTER -->
             <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 mb-2 space-y-1">
-              <span class="text-[9px] uppercase font-bold text-blue-400 block tracking-wider">Lobby Roster (Slot ${squad.slot}):</span>
+              <span class="text-[9px] uppercase font-bold text-blue-400 block tracking-wider">Lobby Roster (${squad.slot ? 'Slot ' + squad.slot : 'Unassigned'}):</span>
               <div class="text-[10px] font-mono text-slate-400 truncate">
-                ${lobbyPlayerList.length > 0 ? lobbyPlayerList.join(', ') : '<span class="italic text-slate-600">No lobby players registered</span>'}
+                ${lobbyPlayerList.length > 0 ? lobbyPlayerList.join(', ') : '<span class="italic text-slate-600">Select slot to view lobby roster</span>'}
               </div>
             </div>
 
@@ -971,6 +1005,55 @@
         grid.appendChild(squadCard);
       });
     }
+
+    window.changeSquadAssignedSlot = function(mIndex, sIndex, newSlotVal) {
+      const t = getCurrentTourney();
+      if (!t) return;
+
+      const slotInt = newSlotVal ? parseInt(newSlotVal) : null;
+      t.matchHistory[mIndex][sIndex].slot = slotInt;
+      t.matchHistory[mIndex][sIndex].teamName = slotInt ? t.registeredSlots[slotInt] : 'Unassigned';
+
+      t.matchHistory[mIndex][sIndex].players.forEach(p => {
+        const detected = checkPlayerLobbyMatch(p.ign);
+        p.isMatched = (detected === slotInt);
+        if (p.isMatched) p.isApproved = true;
+      });
+
+      saveAllTournaments();
+      renderReviewSection(mIndex);
+      renderCumulativeOS();
+    };
+
+    window.addMissingRankCard = function(mIndex) {
+      const t = getCurrentTourney();
+      const rank = parseInt(document.getElementById('missingRankSelect').value);
+      if (!rank) return;
+
+      t.matchHistory[mIndex].push({
+        rank: rank,
+        slot: null,
+        teamName: 'Unassigned',
+        players: [
+          { ign: 'Player 1', kills: 0, detectedSlot: null, isMatched: false, isApproved: true },
+          { ign: 'Player 2', kills: 0, detectedSlot: null, isMatched: false, isApproved: true }
+        ]
+      });
+
+      t.matchHistory[mIndex].sort((a, b) => a.rank - b.rank);
+      saveAllTournaments();
+      renderReviewSection(mIndex);
+      renderCumulativeOS();
+      logMsg(`Added Rank #${rank} card manually.`);
+    };
+
+    window.updatePlayerKillsDirect = function(mIndex, sIndex, pIndex, killsVal) {
+      const t = getCurrentTourney();
+      t.matchHistory[mIndex][sIndex].players[pIndex].kills = parseInt(killsVal) || 0;
+      saveAllTournaments();
+      renderReviewSection(mIndex);
+      renderCumulativeOS();
+    };
 
     window.togglePlayerApproval = function(mIndex, sIndex, pIndex, approved) {
       const t = getCurrentTourney();
@@ -1006,7 +1089,7 @@
 
       t.matchHistory.forEach(matchList => {
         matchList.forEach(m => {
-          if (totals[m.slot]) {
+          if (m.slot && totals[m.slot]) {
             totals[m.slot].matchesPlayed += 1;
             const place = rule.placements[m.rank] !== undefined ? rule.placements[m.rank] : 0;
 
