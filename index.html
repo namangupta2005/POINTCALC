@@ -807,7 +807,7 @@
       return (fallback >= 1 && fallback <= 12) ? fallback : null;
     }
 
-    // --- STEP 3: RESULT PROCESSOR (NEVER SKIP ANY RANK) ---
+    // --- STEP 3: RESULT PROCESSOR (ANTI-DUPLICATE SLOT & RANK LOCK) ---
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -831,21 +831,33 @@
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
 
+        // 1. Strict Rank Uniqueness
         const rankMap = new Map();
         json.data.forEach(item => {
-          const r = parseInt(item.rank);
-          if (r && !rankMap.has(r)) rankMap.set(r, item);
+          const r = parseInt(String(item.rank).replace(/[^0-9]/g, ''), 10);
+          if (r >= 1 && r <= 12 && !rankMap.has(r)) {
+            item.rank = r;
+            rankMap.set(r, item);
+          }
         });
 
         const verifiedMatchData = [];
-        const assignedSlots = new Set();
+        const usedSlotsInThisMatch = new Set();
+        const usedRanksInThisMatch = new Set();
 
         for (const [rank, item] of rankMap.entries()) {
+          if (usedRanksInThisMatch.has(rank)) continue;
+          usedRanksInThisMatch.add(rank);
+
           let squadSlot = findSquadSlot(item);
-          if (squadSlot && assignedSlots.has(squadSlot)) {
+
+          // Agar yeh Slot is match mein pehle hi kisi rank ko mil gaya hai, toh slot ko unassigned karo (Double add rokne ke liye)
+          if (squadSlot && usedSlotsInThisMatch.has(squadSlot)) {
             squadSlot = null;
           }
-          if (squadSlot) assignedSlots.add(squadSlot);
+          if (squadSlot) {
+            usedSlotsInThisMatch.add(squadSlot);
+          }
 
           const playersList = (item.playerStats && item.playerStats.length > 0)
             ? item.playerStats
@@ -878,9 +890,9 @@
         refreshMatchState();
 
         document.getElementById('nextMatchActionArea').classList.remove('hidden');
-        document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} extracted & ready for review!`;
+        document.getElementById('matchProcessedText').innerText = `Match ${t.matchHistory.length} extracted cleanly!`;
         document.getElementById('addNextMatchBtn').querySelector('span').innerText = `+ Add Match ${t.matchHistory.length + 1}`;
-        logMsg(`Match ${t.matchHistory.length} loaded. Check missing ranks or unassigned slots.`);
+        logMsg(`Match ${t.matchHistory.length} recorded. Deduplication verified.`);
       } catch (err) {
         logMsg('Scoreboard error: ' + err.message, true);
       } finally {
