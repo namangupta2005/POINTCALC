@@ -110,35 +110,29 @@ app.post('/api/extract-lobby', upload.array('lobbyImages', 5), async (req, res) 
   }
 });
 
-// 2. Scoreboard Extract with Explicit Player-Wise Kill Breakdown
+// 2. Scoreboard Extract (Strict Integer Rank Deduplication)
 app.post('/api/extract-result', upload.array('resultImages', 5), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload match result screenshots' });
 
     const prompt = `
       Extract Free Fire match scoreboard end-screen.
-      CRITICAL INSTRUCTIONS:
-      1. Find each placed rank (#1 to #12). Each rank must only appear ONCE in the JSON.
-      2. Extract EVERY individual player visible in that squad row:
-         - "ign": exact name of the player
-         - "kills": eliminations scored by this player (integer)
-      3. Provide:
-         - "rank": integer (1-12)
-         - "identifier": team name / clan tag or captain IGN
-         - "playerStats": array of { "ign": string, "kills": number }
-         - "kills": sum of playerStats kills (DO NOT MULTIPLY)
+      CRITICAL DEDUPLICATION RULES:
+      1. Ranks must be pure integers 1 to 12 only.
+      2. If multiple screenshots overlap, IGNORE duplicate ranks.
+      3. For each rank (#1 to #12):
+         - "rank": integer (1 to 12)
+         - "identifier": team name / captain IGN
+         - "playerStats": array of { "ign": string, "kills": integer }
+         - "kills": total kills for this squad (sum of playerStats)
       
-      OUTPUT FORMAT (Strict JSON Array):
+      OUTPUT STRICT JSON ARRAY ONLY:
       [
         {
           "rank": 1,
-          "identifier": "VGL ESPORTS",
-          "kills": 13,
-          "playerStats": [
-            { "ign": "VGLSHINIGAMI", "kills": 6 },
-            { "ign": "WTF RUSHER", "kills": 4 },
-            { "ign": "VGL-RODX", "kills": 3 }
-          ]
+          "identifier": "TEAM NAME",
+          "kills": 4,
+          "playerStats": [{ "ign": "PLAYER1", "kills": 4 }]
         }
       ]
     `;
@@ -148,7 +142,20 @@ app.post('/api/extract-result', upload.array('resultImages', 5), async (req, res
     }));
 
     const raw = await callGeminiWithKeyRotation(prompt, parts);
-    res.json({ success: true, data: parseCleanJson(raw) });
+    const parsed = parseCleanJson(raw);
+
+    // Server-side strict rank deduplication (Rank 1-12 only once)
+    const uniqueMap = new Map();
+    parsed.forEach(item => {
+      const cleanRank = parseInt(String(item.rank).replace(/[^0-9]/g, ''), 10);
+      if (cleanRank >= 1 && cleanRank <= 12 && !uniqueMap.has(cleanRank)) {
+        item.rank = cleanRank;
+        uniqueMap.set(cleanRank, item);
+      }
+    });
+
+    const cleanList = Array.from(uniqueMap.values()).sort((a, b) => a.rank - b.rank);
+    res.json({ success: true, data: cleanList });
   } catch (err) {
     console.error('RESULT_ERR:', err.message);
     res.status(500).json({ error: err.message });
