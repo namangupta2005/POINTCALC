@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>eSports TourneyManager Ultimate</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Rajdhani:wght@600;700;800&family=Inter:wght@700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Teko:wght@600;700&family=Rajdhani:wght@600;700&display=swap');
     
     .font-teko { font-family: 'Teko', sans-serif; }
     .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
-    .font-team { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .font-fse { font-family: 'Montserrat', sans-serif; }
 
     .btn-spinner {
       border: 2px solid rgba(255, 255, 255, 0.2);
@@ -24,18 +23,6 @@
       display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Clean Esports Pill Row - Zero clipping */
-    .esports-pill-row {
-      background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      padding: 4px 14px;
-      box-sizing: border-box;
-    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-2.5 sm:p-4 md:p-8 font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
@@ -47,12 +34,19 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
         <div>
           <h1 class="text-2xl sm:text-3xl font-black text-amber-400 uppercase tracking-wider">Tournament Hub</h1>
-          <p class="text-xs text-slate-400">Manage, calculate, and review Free Fire tournaments with player verification.</p>
+          <p class="text-xs text-slate-400">Manage, calculate, and backup complete Free Fire tournaments.</p>
         </div>
-        <button id="showCreateModalBtn" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center space-x-1.5">
-          <span class="text-base leading-none">+</span>
-          <span>Create Tournament</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow flex items-center space-x-1.5">
+            <span>📂</span>
+            <span>Import Tourney (.zip)</span>
+            <input type="file" id="importFullTourneyZipInput" accept=".zip" class="hidden" />
+          </label>
+          <button id="showCreateModalBtn" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center space-x-1.5">
+            <span class="text-base leading-none">+</span>
+            <span>Create Tournament</span>
+          </button>
+        </div>
       </div>
 
       <div>
@@ -67,7 +61,6 @@
       </div>
     </div>
 
-
     <!-- ================= VIEW 2: ACTIVE TOURNAMENT WORKSPACE ================= -->
     <div id="workspaceView" class="hidden space-y-4 sm:space-y-6">
 
@@ -79,10 +72,13 @@
           </button>
           <div>
             <h1 class="text-lg sm:text-2xl font-black text-amber-400 uppercase tracking-wide truncate max-w-[240px] sm:max-w-md" id="activeTourneyName">Tournament</h1>
-            <p class="text-[10px] sm:text-xs text-slate-400">Auto-Sync & Overload Protection Active</p>
+            <p class="text-[10px] sm:text-xs text-slate-400">Full Progress Auto-Saved</p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="exportFullTourneyBtn" class="bg-purple-900/60 hover:bg-purple-800/80 text-purple-200 border border-purple-500/40 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 shadow">
+            <span>💾</span> <span>Backup Tourney (.zip)</span>
+          </button>
           <span class="text-[10px] sm:text-xs bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-emerald-400 font-mono" id="matchesRecordedBadge">Matches: 0</span>
         </div>
       </div>
@@ -96,10 +92,10 @@
           </div>
           <div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
             <button id="exportSlotsZipBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-lg text-[11px] uppercase transition-all flex items-center space-x-1 border border-slate-700">
-              <span>📦</span> <span>Export .zip</span>
+              <span>📦</span> <span>Export Slots .zip</span>
             </button>
             <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-lg text-[11px] uppercase transition-all flex items-center space-x-1 border border-slate-700 cursor-pointer">
-              <span>📂</span> <span>Import .zip</span>
+              <span>📂</span> <span>Import Slots .zip</span>
               <input type="file" id="importSlotsZipInput" accept=".zip" class="hidden" />
             </label>
             <button id="saveSlotlistBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[11px] uppercase transition-all shadow">
@@ -130,7 +126,6 @@
           </button>
         </div>
 
-        <!-- SECTION-SPECIFIC STATUS MSG FOR LOBBY -->
         <div id="lobbySectionMsg" class="hidden p-2 rounded-lg text-xs font-mono"></div>
 
         <div id="lobbyContainer" class="hidden space-y-3 pt-3 border-t border-slate-800">
@@ -180,7 +175,6 @@
           </div>
         </div>
 
-        <!-- SECTION-SPECIFIC STATUS MSG FOR MATCH RESULT -->
         <div id="resultSectionMsg" class="hidden p-2.5 rounded-lg text-xs font-mono"></div>
 
         <div id="nextMatchActionArea" class="hidden pt-3 border-t border-slate-800 flex flex-col sm:flex-row gap-2 justify-between items-center">
@@ -205,66 +199,20 @@
         <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
-      <!-- OVERALL STANDINGS (OS) - HIGH-END PINK/PURPLE ESPORTS DESIGN -->
+      <!-- OVERALL STANDINGS (OS) - CANVAS TEMPLATE OVERLAY -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
-            <p class="text-[10px] sm:text-[11px] text-slate-400">Custom eSports Edition</p>
+            <p class="text-[10px] sm:text-[11px] text-slate-400">Final Strike Official Graphics Edition</p>
           </div>
-          <button id="downloadOsBtn" class="w-full sm:w-auto bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">Download Standings (.png)</button>
+          <button id="downloadOsBtn" class="w-full sm:w-auto bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
+            Download HD Standings (.png)
+          </button>
         </div>
 
-        <!-- THE CANVAS WRAPPER (pt.jpeg replicated) -->
-        <div id="osGraphic" class="relative w-full max-w-[950px] mx-auto p-4 sm:p-8 rounded-3xl overflow-hidden shadow-2xl" style="background: radial-gradient(circle at center, #2e0842 0%, #150222 55%, #08000f 100%);">
-          
-          <!-- Top Header Brand Section -->
-          <div class="flex justify-between items-center border-b border-fuchsia-500/30 pb-3 mb-4">
-            <div class="flex items-center space-x-2">
-              <span class="text-white text-xl sm:text-2xl font-black italic tracking-tighter">F<span class="text-pink-500">MAX</span></span>
-            </div>
-            <div class="text-center">
-              <span class="text-[10px] sm:text-xs tracking-[0.3em] font-black text-fuchsia-300 uppercase font-rajdhani">FINAL STRIKE ESPORTS</span>
-            </div>
-            <div class="flex items-center space-x-1 text-right">
-              <span class="text-xs sm:text-sm font-black italic text-amber-400 font-teko">FINAL STRIKE</span>
-            </div>
-          </div>
-
-          <!-- Big Neon Title -->
-          <div class="text-center my-3 sm:my-5">
-            <h2 class="text-xs sm:text-sm font-black tracking-[0.4em] text-pink-400 uppercase font-rajdhani" id="osGraphicSubTitle">OVERALL</h2>
-            <h1 class="text-3xl sm:text-5xl md:text-6xl font-black italic tracking-wider text-white uppercase font-teko" style="text-shadow: 0 0 20px rgba(236,72,153,0.6);" id="osTitleDisplay">
-              STANDINGS
-            </h1>
-          </div>
-
-          <!-- Table Header -->
-          <div class="flex items-center text-[10px] sm:text-xs font-black tracking-wider text-fuchsia-300 uppercase px-4 py-1.5 font-rajdhani border-b border-fuchsia-900/50 mb-2">
-            <div style="width: 55px; text-align: center;">RANKS</div>
-            <div style="flex: 1; min-width: 0; padding-left: 14px;">TEAM NAMES</div>
-            <div style="width: 50px; text-align: center;">MP</div>
-            <div style="width: 50px; text-align: center;">WINS</div>
-            <div style="width: 50px; text-align: center;">KP</div>
-            <div style="width: 50px; text-align: center;">PP</div>
-            <div style="width: 65px; text-align: center;" class="text-pink-300">TP</div>
-          </div>
-
-          <!-- Rows Container -->
-          <div id="osRowsContainer" class="space-y-1.5"></div>
-
-          <!-- Bottom Socials & Partner Footer -->
-          <div class="mt-6 pt-3 border-t border-fuchsia-500/20 flex flex-wrap justify-between items-center text-[9px] sm:text-[10px] text-fuchsia-200/70 font-rajdhani tracking-wider gap-2">
-            <div class="flex items-center space-x-3">
-              <span>DISCORD: <b class="text-white">FINAL STRIKE ESP</b></span>
-              <span>INSTAGRAM: <b class="text-pink-400">@final.strike.esp</b></span>
-            </div>
-            <div class="flex items-center space-x-2">
-              <span>YOUTUBE: <b class="text-white">FINAL STRIKE ESP</b></span>
-              <span class="bg-fuchsia-950/80 border border-fuchsia-500/40 text-[9px] px-2 py-0.5 rounded text-fuchsia-300 font-bold">VISUAL PARTNER</span>
-            </div>
-          </div>
-
+        <div class="w-full flex justify-center bg-slate-950 p-2 sm:p-4 rounded-2xl border border-slate-800 shadow-2xl overflow-x-auto">
+          <canvas id="osTemplateCanvas" width="1080" height="1080" class="max-w-full h-auto rounded-xl border border-fuchsia-500/30"></canvas>
         </div>
       </div>
 
@@ -331,6 +279,30 @@
     let allTournaments = [];
     let currentTourneyId = null;
     let reverseTimerInterval = null;
+
+    const possibleTemplates = ['template.png', 'template.jpeg', 'template.jpg', 'FSE OS.jpeg', 'FSE OS.jpg'];
+    let templateIndex = 0;
+    const templateImg = new Image();
+    templateImg.crossOrigin = 'anonymous';
+
+    function tryLoadTemplate() {
+      if (templateIndex < possibleTemplates.length) {
+        templateImg.src = possibleTemplates[templateIndex];
+      }
+    }
+
+    templateImg.onerror = () => {
+      templateIndex++;
+      tryLoadTemplate();
+    };
+
+    templateImg.onload = () => {
+      if (currentTourneyId) {
+        renderCumulativeOS();
+      }
+    };
+
+    tryLoadTemplate();
 
     const scoringRules = {
       ff: { placements: { 1: 12, 2: 9, 3: 8, 4: 7, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1, 11: 0, 12: 0 }, kill: 1 },
@@ -449,7 +421,6 @@
       document.getElementById('workspaceView').classList.remove('hidden');
 
       document.getElementById('activeTourneyName').innerText = t.name;
-      document.getElementById('osTitleDisplay').innerText = t.name.toUpperCase();
       document.getElementById('presetSelect').value = t.preset;
 
       renderSlotInputs();
@@ -549,7 +520,7 @@
       alert('Slots updated & live synced!');
     });
 
-    // ZIP EXPORT FOR SLOTS
+    // ZIP EXPORT FOR SLOTS ONLY
     document.getElementById('exportSlotsZipBtn').addEventListener('click', async () => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -584,7 +555,7 @@
       URL.revokeObjectURL(link.href);
     });
 
-    // ZIP IMPORT FOR SLOTS
+    // ZIP IMPORT FOR SLOTS ONLY
     document.getElementById('importSlotsZipInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -640,6 +611,82 @@
         alert('Slots successfully import ho gayi hain!');
       } catch (err) {
         alert('Zip read error: ' + err.message);
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    // ================= NEW FEATURE: FULL TOURNAMENT BACKUP & RESTORE =================
+    // 1. Export Entire Tournament (Slots + Lobby + All Matches Recorded)
+    document.getElementById('exportFullTourneyBtn').addEventListener('click', async () => {
+      const t = getCurrentTourney();
+      if (!t) return;
+
+      const zip = new JSZip();
+      const backupPayload = {
+        type: 'TOURNAMENT_FULL_BACKUP',
+        version: '2.0',
+        exportedAt: new Date().toISOString(),
+        tournament: t
+      };
+
+      zip.file('tournament_backup.json', JSON.stringify(backupPayload, null, 2));
+
+      let summary = `TOURNAMENT BACKUP SUMMARY\n=========================\n`;
+      summary += `Title: ${t.name}\nPreset: ${t.preset}\nMatches Recorded: ${t.matchHistory.length}\n`;
+      summary += `Lobby Slots Mapped: ${t.lobbyData.length}\n`;
+      zip.file('summary.txt', summary);
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const safeName = (t.name || 'tourney').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${safeName}_match_${t.matchHistory.length}_backup.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    // 2. Import Entire Tournament (From Hub Dashboard)
+    document.getElementById('importFullTourneyZipInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const zip = await JSZip.loadAsync(file);
+        let backupData = null;
+
+        if (zip.file('tournament_backup.json')) {
+          const content = await zip.file('tournament_backup.json').async('string');
+          backupData = JSON.parse(content);
+        } else {
+          for (const filename of Object.keys(zip.files)) {
+            if (filename.endsWith('.json')) {
+              const content = await zip.file(filename).async('string');
+              const parsed = JSON.parse(content);
+              if (parsed.tournament) {
+                backupData = parsed;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!backupData || !backupData.tournament) {
+          throw new Error('Tournament backup file is missing or invalid.');
+        }
+
+        const importedTourney = backupData.tournament;
+        importedTourney.id = 'tourney_' + Date.now(); // Unique ID to avoid conflicts
+        importedTourney.name = `${importedTourney.name} (Restored)`;
+
+        allTournaments.unshift(importedTourney);
+        saveAllTournaments();
+        renderTourneyList();
+        openTournament(importedTourney.id);
+
+        alert(`Tournament "${importedTourney.name}" successfully loaded from Match ${importedTourney.matchHistory.length}! Ab aap next match add kar sakte hain.`);
+      } catch (err) {
+        alert('Tournament Import Error: ' + err.message);
       } finally {
         e.target.value = '';
       }
@@ -1183,14 +1230,14 @@
       renderCumulativeOS();
     };
 
-    // --- REPLICATED PT.JPEG DESIGN ENGINE (PERFECT UNCLIPPED BASELINE) ---
+    // --- DRAW ONTO BLANK TEMPLATE (CALIBRATED TO OFFICIAL FSE EXACT SIZE & WEIGHT) ---
     function renderCumulativeOS() {
       const t = getCurrentTourney();
       if (!t) return;
 
       const rule = scoringRules[t.preset] || scoringRules.ff;
-      const container = document.getElementById('osRowsContainer');
-      container.innerHTML = '';
+      const canvas = document.getElementById('osTemplateCanvas');
+      const ctx = canvas.getContext('2d');
 
       const totals = {};
       for (let s = 1; s <= 12; s++) {
@@ -1227,70 +1274,86 @@
 
       const pad = (n) => String(n).padStart(2, '0');
 
-      leaderBoard.forEach((row, index) => {
-        const isFirst = index === 0;
-        const rowDiv = document.createElement('div');
+      function drawTable() {
+        const cw = canvas.width;
+        const ch = canvas.height;
+        ctx.clearRect(0, 0, cw, ch);
         
-        rowDiv.className = `esports-pill-row ${isFirst ? 'ring-2 ring-pink-500' : ''}`;
-        
-        rowDiv.innerHTML = `
-          <div style="width: 55px; text-align: center;" class="font-black text-lg text-fuchsia-950 font-rajdhani shrink-0">
-            ${pad(index + 1)}
-          </div>
-          <div style="flex: 1; min-width: 0; padding: 0 14px; display: flex; align-items: baseline;">
-            <span style="display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; padding-bottom: 2px; font-size: 15px; font-weight: 900;" class="font-team uppercase text-slate-950 tracking-normal sm:text-base">
-              ${row.teamName}
-            </span>
-            ${isFirst ? '<span style="font-size: 14px; line-height: 1; margin-left: 6px;" class="shrink-0">👑</span>' : ''}
-          </div>
-          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
-            ${pad(row.matchesPlayed)}
-          </div>
-          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
-            ${row.wins > 0 ? pad(row.wins) : '--'}
-          </div>
-          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
-            ${pad(row.killPts)}
-          </div>
-          <div style="width: 50px; text-align: center;" class="font-extrabold text-sm text-slate-800 font-rajdhani shrink-0">
-            ${pad(row.placePts)}
-          </div>
-          <div style="width: 65px; text-align: center;" class="font-black text-lg text-fuchsia-900 font-rajdhani shrink-0">
-            ${pad(row.total)}
-          </div>
-        `;
-        container.appendChild(rowDiv);
-      });
+        // 1. Draw Template Image
+        if (templateImg.complete && templateImg.naturalWidth > 0) {
+          ctx.drawImage(templateImg, 0, 0, cw, ch);
+        } else {
+          ctx.fillStyle = '#150222';
+          ctx.fillRect(0, 0, cw, ch);
+        }
 
-      document.getElementById('osGraphicSubTitle').innerText = `MATCH 1 TO ${t.matchHistory.length} • OVERALL`;
-      document.getElementById('osSection').classList.remove('hidden');
-    }
+        // Subtitle ("Match 1 to 2 • Overall") permanently removed!
 
-    // High Quality Export without font cutting
-    document.getElementById('downloadOsBtn').addEventListener('click', async () => {
-      const t = getCurrentTourney();
-      const graphic = document.getElementById('osGraphic');
+        // 2. Exact 12 Rows Y-Centers detected from template
+        const rowYCenters = [408, 458.5, 509, 560, 610, 660, 711, 761.5, 809, 859, 910, 961];
 
-      if (document.fonts) {
-        await document.fonts.ready;
+        // Vertical middle alignment
+        ctx.textBaseline = 'middle';
+
+        // Official FSE Color (Dark deep purple-black)
+        const officialTextColor = '#12051d';
+
+        leaderBoard.forEach((row, i) => {
+          const cy = rowYCenters[i];
+
+          // RANK (#01 - #12) - Sleek 700 bold
+          ctx.font = '700 20px Montserrat, sans-serif';
+          ctx.fillStyle = officialTextColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(pad(i + 1), 85.5, cy);
+
+          // TEAM NAME (Inside white box - Reduced thickness & size)
+          ctx.font = '700 17px Montserrat, sans-serif';
+          ctx.fillStyle = officialTextColor;
+          ctx.textAlign = 'left';
+          let displayName = row.teamName.toUpperCase();
+          if (displayName.length > 28) displayName = displayName.substring(0, 26) + '..';
+          ctx.fillText(displayName, 140, cy);
+
+          // MP (Matches Played)
+          ctx.font = '700 19px Montserrat, sans-serif';
+          ctx.fillStyle = officialTextColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(pad(row.matchesPlayed), 732.5, cy);
+
+          // WINS
+          ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', 796.5, cy);
+
+          // KP (Kill Points)
+          ctx.fillText(pad(row.killPts), 860.5, cy);
+
+          // PP (Placement Points)
+          ctx.fillText(pad(row.placePts), 924.5, cy);
+
+          // TP (Total Points)
+          ctx.font = '800 20px Montserrat, sans-serif';
+          ctx.fillStyle = officialTextColor;
+          ctx.fillText(pad(row.total), 989.5, cy);
+        });
+
+        document.getElementById('osSection').classList.remove('hidden');
       }
 
-      html2canvas(graphic, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: '#08000f',
-        logging: false,
-        onclone: (clonedDoc) => {
-          const target = clonedDoc.getElementById('osGraphic');
-          target.style.width = '1000px';
-          target.style.maxWidth = '1000px';
-        }
-      }).then(cv => {
-        const link = document.createElement('a');
-        link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_final_strike.png`;
-        link.href = cv.toDataURL('image/png', 1.0);
-        link.click();
-      });
+      if (templateImg.complete && templateImg.naturalWidth > 0) {
+        drawTable();
+      } else {
+        templateImg.onload = drawTable;
+      }
+    }
+
+    // Direct Instant Download from Canvas
+    document.getElementById('downloadOsBtn').addEventListener('click', () => {
+      const t = getCurrentTourney();
+      const canvas = document.getElementById('osTemplateCanvas');
+      const link = document.createElement('a');
+      link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_final_strike.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
     });
 
     window.addEventListener('DOMContentLoaded', () => {
