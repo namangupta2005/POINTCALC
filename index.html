@@ -37,7 +37,7 @@
           <p class="text-xs text-slate-400">Manage, calculate, and backup complete Free Fire tournaments.</p>
         </div>
         <div class="flex items-center gap-2">
-          <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow flex items-center space-x-1.5">
+          <label class="bg-purple-900/60 hover:bg-purple-800/80 text-purple-200 border border-purple-500/40 font-bold px-3.5 py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-lg flex items-center space-x-1.5 transition-all">
             <span>📂</span>
             <span>Import Tourney (.zip)</span>
             <input type="file" id="importFullTourneyZipInput" accept=".zip" class="hidden" />
@@ -199,7 +199,7 @@
         <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
-      <!-- OVERALL STANDINGS (OS) - CANVAS TEMPLATE OVERLAY -->
+      <!-- OVERALL STANDINGS (OS) - OFFICIAL FSE TEMPLATE OVERLAY -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
@@ -451,12 +451,14 @@
 
     function refreshMatchState() {
       const t = getCurrentTourney();
+      if (!t) return;
       const matchCount = t.matchHistory.length;
       document.getElementById('matchesRecordedBadge').innerText = `Matches: ${matchCount}`;
       document.getElementById('matchCounterBadge').innerText = `Matches: ${matchCount}`;
       document.getElementById('currentMatchHeader').innerText = `MATCH ${matchCount + 1} Result`;
 
       if (matchCount > 0) {
+        document.getElementById('osSection').classList.remove('hidden');
         renderCumulativeOS();
         updateMatchSelectorOptions();
         renderReviewSection(matchCount - 1);
@@ -616,8 +618,8 @@
       }
     });
 
-    // ================= NEW FEATURE: FULL TOURNAMENT BACKUP & RESTORE =================
-    // 1. Export Entire Tournament (Slots + Lobby + All Matches Recorded)
+    // ================= FULL TOURNAMENT BACKUP & RESTORE WITH INSTANT PT RENDER =================
+    // 1. Export Entire Tournament
     document.getElementById('exportFullTourneyBtn').addEventListener('click', async () => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -646,7 +648,7 @@
       URL.revokeObjectURL(link.href);
     });
 
-    // 2. Import Entire Tournament (From Hub Dashboard)
+    // 2. Import Entire Tournament (With Guaranteed Instant PT Render)
     document.getElementById('importFullTourneyZipInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -676,15 +678,27 @@
         }
 
         const importedTourney = backupData.tournament;
-        importedTourney.id = 'tourney_' + Date.now(); // Unique ID to avoid conflicts
-        importedTourney.name = `${importedTourney.name} (Restored)`;
+        importedTourney.id = 'tourney_' + Date.now();
+        importedTourney.name = `${importedTourney.name.replace(/\s*\(Restored\)/g, '')} (Restored)`;
 
+        // Save imported tournament to array
         allTournaments.unshift(importedTourney);
         saveAllTournaments();
         renderTourneyList();
+
+        // Immediately activate and open workspace
         openTournament(importedTourney.id);
 
-        alert(`Tournament "${importedTourney.name}" successfully loaded from Match ${importedTourney.matchHistory.length}! Ab aap next match add kar sakte hain.`);
+        // Force active display of OS Section & Canvas Draw
+        if (importedTourney.matchHistory && importedTourney.matchHistory.length > 0) {
+          document.getElementById('osSection').classList.remove('hidden');
+          // Re-trigger render
+          setTimeout(() => {
+            renderCumulativeOS();
+          }, 100);
+        }
+
+        alert(`Tournament "${importedTourney.name}" successfully imported with ${importedTourney.matchHistory.length} Matches! PT is now ready.`);
       } catch (err) {
         alert('Tournament Import Error: ' + err.message);
       } finally {
@@ -957,7 +971,7 @@
       }
     }
 
-    // --- STEP 3: RESULT PROCESSOR (ANTI-DUPLICATE & ROBUST) ---
+    // --- STEP 3: RESULT PROCESSOR ---
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -1237,6 +1251,7 @@
 
       const rule = scoringRules[t.preset] || scoringRules.ff;
       const canvas = document.getElementById('osTemplateCanvas');
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
       const totals = {};
@@ -1301,13 +1316,13 @@
         leaderBoard.forEach((row, i) => {
           const cy = rowYCenters[i];
 
-          // RANK (#01 - #12) - Sleek 700 bold
+          // RANK (#01 - #12)
           ctx.font = '700 20px Montserrat, sans-serif';
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'center';
           ctx.fillText(pad(i + 1), 85.5, cy);
 
-          // TEAM NAME (Inside white box - Reduced thickness & size)
+          // TEAM NAME (Inside white box)
           ctx.font = '700 17px Montserrat, sans-serif';
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'left';
