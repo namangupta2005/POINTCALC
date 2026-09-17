@@ -199,20 +199,27 @@
         <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
-      <!-- OVERALL STANDINGS (OS) - OFFICIAL FSE TEMPLATE OVERLAY -->
+      <!-- OVERALL STANDINGS (OS) - CANVAS TEMPLATE OVERLAY -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
             <p class="text-[10px] sm:text-[11px] text-slate-400">Final Strike Official Graphics Edition</p>
           </div>
-          <button id="downloadOsBtn" class="w-full sm:w-auto bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
-            Download HD Standings (.png)
-          </button>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- TEMPLATE UPLOAD FALLBACK: Never be stuck if image path fails -->
+            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold px-3 py-2 rounded-lg text-xs uppercase cursor-pointer flex items-center space-x-1 shadow">
+              <span>🖼️</span> <span>Upload Template Image</span>
+              <input type="file" id="manualTemplateInput" accept="image/*" class="hidden" />
+            </label>
+            <button id="downloadOsBtn" class="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
+              Download HD Standings (.png)
+            </button>
+          </div>
         </div>
 
         <div class="w-full flex justify-center bg-slate-950 p-2 sm:p-4 rounded-2xl border border-slate-800 shadow-2xl overflow-x-auto">
-          <canvas id="osTemplateCanvas" width="1080" height="1080" class="max-w-full h-auto rounded-xl border border-fuchsia-500/30"></canvas>
+          <canvas id="osTemplateCanvas" width="1080" height="1080" class="max-w-full h-auto rounded-xl border border-fuchsia-500/30 shadow-2xl"></canvas>
         </div>
       </div>
 
@@ -280,29 +287,43 @@
     let currentTourneyId = null;
     let reverseTimerInterval = null;
 
-    const possibleTemplates = ['template.png', 'template.jpeg', 'template.jpg', 'FSE OS.jpeg', 'FSE OS.jpg'];
-    let templateIndex = 0;
+    // --- TEMPLATE IMAGE AUTO-LOADER WITH ZERO CORS BLOCKING ---
     const templateImg = new Image();
-    templateImg.crossOrigin = 'anonymous';
+    // Do NOT set crossOrigin='anonymous' because local same-origin assets get blocked by strict browser CORS!
+    const templatePaths = ['template.jpeg', 'template.jpg', 'template.png', 'FSE OS.jpeg', 'FSE OS.jpg', '/template.jpeg', '/template.png'];
+    let pathIdx = 0;
 
-    function tryLoadTemplate() {
-      if (templateIndex < possibleTemplates.length) {
-        templateImg.src = possibleTemplates[templateIndex];
+    function loadNextTemplatePath() {
+      if (pathIdx < templatePaths.length) {
+        templateImg.src = templatePaths[pathIdx++];
       }
     }
 
-    templateImg.onerror = () => {
-      templateIndex++;
-      tryLoadTemplate();
-    };
-
     templateImg.onload = () => {
+      console.log('Template loaded successfully from:', templateImg.src);
       if (currentTourneyId) {
         renderCumulativeOS();
       }
     };
 
-    tryLoadTemplate();
+    templateImg.onerror = () => {
+      console.warn('Failed loading template path:', templatePaths[pathIdx - 1]);
+      loadNextTemplatePath();
+    };
+
+    loadNextTemplatePath();
+
+    // User can also choose template image directly anytime
+    document.getElementById('manualTemplateInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        templateImg.src = evt.target.result;
+        renderCumulativeOS();
+      };
+      reader.readAsDataURL(file);
+    });
 
     const scoringRules = {
       ff: { placements: { 1: 12, 2: 9, 3: 8, 4: 7, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1, 11: 0, 12: 0 }, kill: 1 },
@@ -496,7 +517,7 @@
       renderTourneyList();
     };
 
-    // FEATURE 1: LIVE SLOT LIST SYNC
+    // LIVE SLOT LIST SYNC
     document.getElementById('saveSlotlistBtn').addEventListener('click', () => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -618,8 +639,7 @@
       }
     });
 
-    // ================= FULL TOURNAMENT BACKUP & RESTORE WITH INSTANT PT RENDER =================
-    // 1. Export Entire Tournament
+    // FULL TOURNAMENT BACKUP
     document.getElementById('exportFullTourneyBtn').addEventListener('click', async () => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -648,7 +668,7 @@
       URL.revokeObjectURL(link.href);
     });
 
-    // 2. Import Entire Tournament (With Guaranteed Instant PT Render)
+    // FULL TOURNAMENT IMPORT & INSTANT RENDER
     document.getElementById('importFullTourneyZipInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -681,21 +701,16 @@
         importedTourney.id = 'tourney_' + Date.now();
         importedTourney.name = `${importedTourney.name.replace(/\s*\(Restored\)/g, '')} (Restored)`;
 
-        // Save imported tournament to array
         allTournaments.unshift(importedTourney);
         saveAllTournaments();
         renderTourneyList();
-
-        // Immediately activate and open workspace
         openTournament(importedTourney.id);
 
-        // Force active display of OS Section & Canvas Draw
         if (importedTourney.matchHistory && importedTourney.matchHistory.length > 0) {
           document.getElementById('osSection').classList.remove('hidden');
-          // Re-trigger render
           setTimeout(() => {
             renderCumulativeOS();
-          }, 100);
+          }, 150);
         }
 
         alert(`Tournament "${importedTourney.name}" successfully imported with ${importedTourney.matchHistory.length} Matches! PT is now ready.`);
@@ -706,7 +721,7 @@
       }
     });
 
-    // EDIT INDIVIDUAL SLOT ROSTER
+    // EDIT ROSTER MODAL
     window.openEditSlotModal = function(slotNumber) {
       const t = getCurrentTourney();
       document.getElementById('editingSlotNumber').value = slotNumber;
@@ -924,7 +939,7 @@
       return (fallback >= 1 && fallback <= 12) ? fallback : null;
     }
 
-    // --- REVERSE COUNTDOWN TIMER HELPERS ---
+    // REVERSE TIMER
     function startReverseTimer(seconds = 16) {
       const timerBox = document.getElementById('reverseTimerBox');
       const digits = document.getElementById('countdownDigits');
@@ -971,7 +986,7 @@
       }
     }
 
-    // --- STEP 3: RESULT PROCESSOR ---
+    // STEP 3: RESULT PROCESSOR
     document.getElementById('processResultBtn').addEventListener('click', async (e) => {
       const t = getCurrentTourney();
       if (!t) return;
@@ -1079,7 +1094,7 @@
       document.getElementById('resultSectionMsg').classList.add('hidden');
     });
 
-    // --- SIDE-BY-SIDE LOBBY VS END SS PLAYER REVIEW & RECOVERY ---
+    // ROSTER REVIEW SECTION
     function renderReviewSection(mIndex) {
       const t = getCurrentTourney();
       const section = document.getElementById('matchReviewSection');
@@ -1244,7 +1259,7 @@
       renderCumulativeOS();
     };
 
-    // --- DRAW ONTO BLANK TEMPLATE (CALIBRATED TO OFFICIAL FSE EXACT SIZE & WEIGHT) ---
+    // --- DRAW ONTO BLANK TEMPLATE (OFFICIAL FSE EXACT FONT, COLOR & SIZE) ---
     function renderCumulativeOS() {
       const t = getCurrentTourney();
       if (!t) return;
@@ -1295,14 +1310,18 @@
         ctx.clearRect(0, 0, cw, ch);
         
         // 1. Draw Template Image
-        if (templateImg.complete && templateImg.naturalWidth > 0) {
+        if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
           ctx.drawImage(templateImg, 0, 0, cw, ch);
         } else {
-          ctx.fillStyle = '#150222';
+          // If template still loading, draw stylized placeholder so text remains readable
+          ctx.fillStyle = '#200533';
           ctx.fillRect(0, 0, cw, ch);
+          ctx.strokeStyle = '#ec4899';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(20, 20, cw - 40, ch - 40);
         }
 
-        // Subtitle ("Match 1 to 2 • Overall") permanently removed!
+        // Subtitle removed as requested
 
         // 2. Exact 12 Rows Y-Centers detected from template
         const rowYCenters = [408, 458.5, 509, 560, 610, 660, 711, 761.5, 809, 859, 910, 961];
@@ -1354,10 +1373,13 @@
         document.getElementById('osSection').classList.remove('hidden');
       }
 
+      // If image is already ready, draw immediately. Else wait for onload.
       if (templateImg.complete && templateImg.naturalWidth > 0) {
         drawTable();
       } else {
         templateImg.onload = drawTable;
+        // Also retry after 300ms in case onload was already dispatched
+        setTimeout(drawTable, 300);
       }
     }
 
