@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Teko:wght@600;700&family=Rajdhani:wght@600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Teko:wght@600;700&family=Rajdhani:wght@600;700&display=swap');
     
     .font-teko { font-family: 'Teko', sans-serif; }
     .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
@@ -199,19 +199,19 @@
         <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
-      <!-- OVERALL STANDINGS (OS) - CANVAS TEMPLATE OVERLAY -->
+      <!-- OVERALL STANDINGS (OS) - DUAL THEME ENGINE -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div>
             <h2 class="text-xs sm:text-base font-bold uppercase text-slate-200">Overall Standings (OS)</h2>
-            <p class="text-[10px] sm:text-[11px] text-slate-400">Final Strike Official Graphics Edition</p>
+            <p class="text-[10px] sm:text-[11px] text-slate-400">Multi-Template Graphics Engine</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- TEMPLATE UPLOAD FALLBACK: Never be stuck if image path fails -->
-            <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold px-3 py-2 rounded-lg text-xs uppercase cursor-pointer flex items-center space-x-1 shadow">
-              <span>🖼️</span> <span>Upload Template Image</span>
-              <input type="file" id="manualTemplateInput" accept="image/*" class="hidden" />
-            </label>
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <!-- TEMPLATE THEME SELECTOR DROPDOWN -->
+            <select id="templateThemeSelect" class="bg-slate-900 border border-amber-500/50 text-amber-400 font-bold px-3 py-2 rounded-lg text-xs uppercase outline-none shadow cursor-pointer">
+              <option value="fse_official">FSE Official Template (Square)</option>
+              <option value="monsoon_clash_s2">monsoon_clash_s2 (Vertical)</option>
+            </select>
             <button id="downloadOsBtn" class="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
               Download HD Standings (.png)
             </button>
@@ -287,42 +287,75 @@
     let currentTourneyId = null;
     let reverseTimerInterval = null;
 
-    // --- TEMPLATE IMAGE AUTO-LOADER WITH ZERO CORS BLOCKING ---
-    const templateImg = new Image();
-    // Do NOT set crossOrigin='anonymous' because local same-origin assets get blocked by strict browser CORS!
-    const templatePaths = ['template.jpeg', 'template.jpg', 'template.png', 'FSE OS.jpeg', 'FSE OS.jpg', '/template.jpeg', '/template.png'];
-    let pathIdx = 0;
-
-    function loadNextTemplatePath() {
-      if (pathIdx < templatePaths.length) {
-        templateImg.src = templatePaths[pathIdx++];
+    // ================= DUAL TEMPLATE CONFIGURATION & COORDINATE MAP =================
+    const templateConfigs = {
+      fse_official: {
+        width: 1080,
+        height: 1080,
+        url: '/api/template-image?template=fse_official',
+        textColor: '#12051d',
+        rowYCenters: [408, 458.5, 509, 560, 610, 660, 711, 761.5, 809, 859, 910, 961],
+        xCoords: {
+          rank: 85.5,
+          team: 140,
+          mp: 732.5,
+          wins: 796.5,
+          kp: 860.5,
+          pp: 924.5,
+          tp: 989.5
+        },
+        columnOrder: ['mp', 'wins', 'kp', 'pp', 'tp']
+      },
+      monsoon_clash_s2: {
+        width: 1024,
+        height: 1536,
+        url: '/api/template-image?template=monsoon_clash_s2',
+        textColor: '#080d1a',
+        rowYCenters: [780.5, 833.5, 886.5, 939.5, 993.0, 1046.0, 1099.5, 1152.5, 1205.5, 1258.5, 1311.5, 1365.5],
+        xCoords: {
+          rank: 70.5,
+          team: 125,
+          mp: 539.0,
+          wins: 639.0,
+          pp: 742.0, // In Monsoon Clash, PP is before KP!
+          kp: 841.5,
+          tp: 943.5
+        },
+        columnOrder: ['mp', 'wins', 'pp', 'kp', 'tp']
       }
+    };
+
+    let currentSelectedTemplate = 'fse_official';
+    const loadedTemplateImages = {};
+
+    function getOrLoadTemplateImage(themeKey, onDone) {
+      if (loadedTemplateImages[themeKey] && loadedTemplateImages[themeKey].complete && loadedTemplateImages[themeKey].naturalWidth > 0) {
+        if (onDone) onDone(loadedTemplateImages[themeKey]);
+        return loadedTemplateImages[themeKey];
+      }
+
+      const conf = templateConfigs[themeKey];
+      const img = new Image();
+      img.src = conf.url + '&v=' + Date.now();
+      img.onload = () => {
+        loadedTemplateImages[themeKey] = img;
+        if (onDone) onDone(img);
+      };
+      img.onerror = () => {
+        console.warn(`Could not load template from ${conf.url}, trying direct name...`);
+        img.src = (themeKey === 'monsoon_clash_s2') ? 'monsoon_clash_s2.jpeg' : 'FSE OS.jpeg';
+      };
+      loadedTemplateImages[themeKey] = img;
+      return img;
     }
 
-    templateImg.onload = () => {
-      console.log('Template loaded successfully from:', templateImg.src);
-      if (currentTourneyId) {
-        renderCumulativeOS();
-      }
-    };
+    // Preload both templates
+    getOrLoadTemplateImage('fse_official');
+    getOrLoadTemplateImage('monsoon_clash_s2');
 
-    templateImg.onerror = () => {
-      console.warn('Failed loading template path:', templatePaths[pathIdx - 1]);
-      loadNextTemplatePath();
-    };
-
-    loadNextTemplatePath();
-
-    // User can also choose template image directly anytime
-    document.getElementById('manualTemplateInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        templateImg.src = evt.target.result;
-        renderCumulativeOS();
-      };
-      reader.readAsDataURL(file);
+    document.getElementById('templateThemeSelect').addEventListener('change', (e) => {
+      currentSelectedTemplate = e.target.value;
+      renderCumulativeOS();
     });
 
     const scoringRules = {
@@ -668,7 +701,7 @@
       URL.revokeObjectURL(link.href);
     });
 
-    // FULL TOURNAMENT IMPORT & INSTANT RENDER
+    // FULL TOURNAMENT IMPORT
     document.getElementById('importFullTourneyZipInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -713,7 +746,7 @@
           }, 150);
         }
 
-        alert(`Tournament "${importedTourney.name}" successfully imported with ${importedTourney.matchHistory.length} Matches! PT is now ready.`);
+        alert(`Tournament "${importedTourney.name}" successfully imported with ${importedTourney.matchHistory.length} Matches! PT ready.`);
       } catch (err) {
         alert('Tournament Import Error: ' + err.message);
       } finally {
@@ -1259,7 +1292,7 @@
       renderCumulativeOS();
     };
 
-    // --- DRAW ONTO BLANK TEMPLATE (OFFICIAL FSE EXACT FONT, COLOR & SIZE) ---
+    // --- DUAL TEMPLATE CANVAS ENGINE ---
     function renderCumulativeOS() {
       const t = getCurrentTourney();
       if (!t) return;
@@ -1268,6 +1301,12 @@
       const canvas = document.getElementById('osTemplateCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
+
+      const conf = templateConfigs[currentSelectedTemplate] || templateConfigs.fse_official;
+      
+      // Dynamic Canvas Dimension Resize according to selected template
+      canvas.width = conf.width;
+      canvas.height = conf.height;
 
       const totals = {};
       for (let s = 1; s <= 12; s++) {
@@ -1304,83 +1343,67 @@
 
       const pad = (n) => String(n).padStart(2, '0');
 
-      function drawTable() {
+      function drawTable(img) {
         const cw = canvas.width;
         const ch = canvas.height;
         ctx.clearRect(0, 0, cw, ch);
         
         // 1. Draw Template Image
-        if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
-          ctx.drawImage(templateImg, 0, 0, cw, ch);
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, 0, 0, cw, ch);
         } else {
-          // If template still loading, draw stylized placeholder so text remains readable
-          ctx.fillStyle = '#200533';
+          ctx.fillStyle = '#101726';
           ctx.fillRect(0, 0, cw, ch);
-          ctx.strokeStyle = '#ec4899';
-          ctx.lineWidth = 4;
-          ctx.strokeRect(20, 20, cw - 40, ch - 40);
         }
 
-        // Subtitle removed as requested
-
-        // 2. Exact 12 Rows Y-Centers detected from template
-        const rowYCenters = [408, 458.5, 509, 560, 610, 660, 711, 761.5, 809, 859, 910, 961];
-
-        // Vertical middle alignment
         ctx.textBaseline = 'middle';
-
-        // Official FSE Color (Dark deep purple-black)
-        const officialTextColor = '#12051d';
+        const officialTextColor = conf.textColor;
 
         leaderBoard.forEach((row, i) => {
-          const cy = rowYCenters[i];
+          const cy = conf.rowYCenters[i];
 
           // RANK (#01 - #12)
           ctx.font = '700 20px Montserrat, sans-serif';
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'center';
-          ctx.fillText(pad(i + 1), 85.5, cy);
+          ctx.fillText(pad(i + 1), conf.xCoords.rank, cy);
 
-          // TEAM NAME (Inside white box)
+          // TEAM NAME
           ctx.font = '700 17px Montserrat, sans-serif';
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'left';
           let displayName = row.teamName.toUpperCase();
-          if (displayName.length > 28) displayName = displayName.substring(0, 26) + '..';
-          ctx.fillText(displayName, 140, cy);
+          const maxLen = (currentSelectedTemplate === 'monsoon_clash_s2') ? 24 : 28;
+          if (displayName.length > maxLen) displayName = displayName.substring(0, maxLen - 2) + '..';
+          ctx.fillText(displayName, conf.xCoords.team, cy);
 
-          // MP (Matches Played)
+          // MP
           ctx.font = '700 19px Montserrat, sans-serif';
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'center';
-          ctx.fillText(pad(row.matchesPlayed), 732.5, cy);
+          ctx.fillText(pad(row.matchesPlayed), conf.xCoords.mp, cy);
 
           // WINS
-          ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', 796.5, cy);
+          ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', conf.xCoords.wins, cy);
 
-          // KP (Kill Points)
-          ctx.fillText(pad(row.killPts), 860.5, cy);
-
-          // PP (Placement Points)
-          ctx.fillText(pad(row.placePts), 924.5, cy);
+          // KP & PP Coordinates are mapped via conf.xCoords!
+          // Monsoon Clash: PP comes before KP[cite: 17]
+          // FSE: KP comes before PP[cite: 10]
+          ctx.fillText(pad(row.killPts), conf.xCoords.kp, cy);
+          ctx.fillText(pad(row.placePts), conf.xCoords.pp, cy);
 
           // TP (Total Points)
           ctx.font = '800 20px Montserrat, sans-serif';
           ctx.fillStyle = officialTextColor;
-          ctx.fillText(pad(row.total), 989.5, cy);
+          ctx.fillText(pad(row.total), conf.xCoords.tp, cy);
         });
 
         document.getElementById('osSection').classList.remove('hidden');
       }
 
-      // If image is already ready, draw immediately. Else wait for onload.
-      if (templateImg.complete && templateImg.naturalWidth > 0) {
-        drawTable();
-      } else {
-        templateImg.onload = drawTable;
-        // Also retry after 300ms in case onload was already dispatched
-        setTimeout(drawTable, 300);
-      }
+      getOrLoadTemplateImage(currentSelectedTemplate, (img) => {
+        drawTable(img);
+      });
     }
 
     // Direct Instant Download from Canvas
@@ -1388,7 +1411,7 @@
       const t = getCurrentTourney();
       const canvas = document.getElementById('osTemplateCanvas');
       const link = document.createElement('a');
-      link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_final_strike.png`;
+      link.download = `${(t?.name || 'standings').replace(/\s+/g, '_')}_${currentSelectedTemplate}.png`;
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
     });
