@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <!-- STEP 1: REGISTERED SLOTS (WITH ZIP EXPORT & IMPORT) -->
+      <!-- STEP 1: REGISTERED SLOTS -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div class="flex items-center space-x-2">
@@ -133,7 +133,7 @@
         </div>
       </div>
 
-      <!-- STEP 3: MATCH PROCESSOR WITH REVERSE COUNTDOWN -->
+      <!-- STEP 3: MATCH PROCESSOR -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <div class="flex items-center space-x-2 sm:space-x-3">
@@ -161,7 +161,6 @@
           </button>
         </div>
 
-        <!-- REVERSE COUNTDOWN TIMER -->
         <div id="reverseTimerBox" class="hidden bg-slate-950 border border-emerald-500/30 p-3 rounded-xl space-y-2">
           <div class="flex justify-between items-center text-xs">
             <span class="text-emerald-400 font-bold flex items-center space-x-1">
@@ -185,7 +184,7 @@
         </div>
       </div>
 
-      <!-- MATCH RESULT ROSTER COMPARISON & VERIFICATION -->
+      <!-- ROSTER REVIEW SECTION -->
       <div id="matchReviewSection" class="hidden space-y-3 bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
           <div>
@@ -199,7 +198,7 @@
         <div id="matchReviewCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
-      <!-- OVERALL STANDINGS (OS) - DUAL THEME ENGINE -->
+      <!-- OVERALL STANDINGS (OS) - MULTI-THEME ENGINE -->
       <div id="osSection" class="hidden space-y-3 sm:space-y-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div>
@@ -211,6 +210,7 @@
             <select id="templateThemeSelect" class="bg-slate-900 border border-amber-500/50 text-amber-400 font-bold px-3 py-2 rounded-lg text-xs uppercase outline-none shadow cursor-pointer">
               <option value="fse_official">FSE Official Template (Square)</option>
               <option value="monsoon_clash_s2">monsoon_clash_s2 (Vertical)</option>
+              <option value="per_match_pt">per_match_pt (Red/Black Edition)</option>
             </select>
             <button id="downloadOsBtn" class="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
               Download HD Standings (.png)
@@ -287,12 +287,13 @@
     let currentTourneyId = null;
     let reverseTimerInterval = null;
 
-    // ================= DUAL TEMPLATE CONFIGURATION & COORDINATE MAP =================
+    // ================= TRIPLE TEMPLATE CONFIGURATION & COORDINATE MAP =================
     const templateConfigs = {
       fse_official: {
         width: 1080,
         height: 1080,
         url: '/api/template-image?template=fse_official',
+        directFile: 'FSE OS.jpeg',
         textColor: '#12051d',
         rowYCenters: [408, 458.5, 509, 560, 610, 660, 711, 761.5, 809, 859, 910, 961],
         xCoords: {
@@ -304,12 +305,13 @@
           pp: 924.5,
           tp: 989.5
         },
-        columnOrder: ['mp', 'wins', 'kp', 'pp', 'tp']
+        fontSizes: { rank: '20px', team: '17px', nums: '19px', tp: '20px' }
       },
       monsoon_clash_s2: {
         width: 1024,
         height: 1536,
         url: '/api/template-image?template=monsoon_clash_s2',
+        directFile: 'monsoon_clash_s2.jpeg',
         textColor: '#080d1a',
         rowYCenters: [780.5, 833.5, 886.5, 939.5, 993.0, 1046.0, 1099.5, 1152.5, 1205.5, 1258.5, 1311.5, 1365.5],
         xCoords: {
@@ -317,11 +319,30 @@
           team: 125,
           mp: 539.0,
           wins: 639.0,
-          pp: 742.0, // In Monsoon Clash, PP is before KP!
+          pp: 742.0, // PP before KP
           kp: 841.5,
           tp: 943.5
         },
-        columnOrder: ['mp', 'wins', 'pp', 'kp', 'tp']
+        fontSizes: { rank: '20px', team: '17px', nums: '19px', tp: '20px' }
+      },
+      per_match_pt: {
+        width: 1111,
+        height: 1416,
+        url: '/api/template-image?template=per_match_pt',
+        directFile: 'per_match_pt.jpeg',
+        textColor: '#ffffff', // Pure white text
+        // Calibrated 12 Rows Y-Centers from per_match_pt_2.jpeg
+        rowYCenters: [598.5, 659.0, 718.5, 778.5, 837.5, 896.0, 955.5, 1014.5, 1073.5, 1132.5, 1191.5, 1252.0],
+        xCoords: {
+          rank: 100.5,
+          team: 175.0,
+          mp: 566.0,
+          pp: 678.0,   // PLACE (PP)
+          kp: 795.0,   // FINISH (KP)
+          tp: 911.0,   // TOTAL (TP)
+          wins: 1018.5 // WINS
+        },
+        fontSizes: { rank: '22px', team: '18px', nums: '20px', tp: '22px' }
       }
     };
 
@@ -337,21 +358,25 @@
       const conf = templateConfigs[themeKey];
       const img = new Image();
       img.src = conf.url + '&v=' + Date.now();
+      
       img.onload = () => {
         loadedTemplateImages[themeKey] = img;
         if (onDone) onDone(img);
       };
+      
       img.onerror = () => {
-        console.warn(`Could not load template from ${conf.url}, trying direct name...`);
-        img.src = (themeKey === 'monsoon_clash_s2') ? 'monsoon_clash_s2.jpeg' : 'FSE OS.jpeg';
+        console.warn(`Could not load template from ${conf.url}, trying direct file...`);
+        img.src = conf.directFile;
       };
+
       loadedTemplateImages[themeKey] = img;
       return img;
     }
 
-    // Preload both templates
+    // Preload templates
     getOrLoadTemplateImage('fse_official');
     getOrLoadTemplateImage('monsoon_clash_s2');
+    getOrLoadTemplateImage('per_match_pt');
 
     document.getElementById('templateThemeSelect').addEventListener('change', (e) => {
       currentSelectedTemplate = e.target.value;
@@ -754,7 +779,7 @@
       }
     });
 
-    // EDIT ROSTER MODAL
+    // EDIT ROSTER
     window.openEditSlotModal = function(slotNumber) {
       const t = getCurrentTourney();
       document.getElementById('editingSlotNumber').value = slotNumber;
@@ -1292,7 +1317,7 @@
       renderCumulativeOS();
     };
 
-    // --- DUAL TEMPLATE CANVAS ENGINE ---
+    // --- MULTI-TEMPLATE CANVAS ENGINE ---
     function renderCumulativeOS() {
       const t = getCurrentTourney();
       if (!t) return;
@@ -1304,7 +1329,7 @@
 
       const conf = templateConfigs[currentSelectedTemplate] || templateConfigs.fse_official;
       
-      // Dynamic Canvas Dimension Resize according to selected template
+      // Dynamic Canvas Dimension Resize
       canvas.width = conf.width;
       canvas.height = conf.height;
 
@@ -1352,50 +1377,58 @@
         if (img && img.complete && img.naturalWidth > 0) {
           ctx.drawImage(img, 0, 0, cw, ch);
         } else {
-          ctx.fillStyle = '#101726';
+          ctx.fillStyle = (currentSelectedTemplate === 'per_match_pt') ? '#08080a' : '#101726';
           ctx.fillRect(0, 0, cw, ch);
         }
 
         ctx.textBaseline = 'middle';
         const officialTextColor = conf.textColor;
+        const fSizes = conf.fontSizes || { rank: '20px', team: '17px', nums: '19px', tp: '20px' };
 
         leaderBoard.forEach((row, i) => {
           const cy = conf.rowYCenters[i];
 
-          // RANK (#01 - #12)
-          ctx.font = '700 20px Montserrat, sans-serif';
+          // 1. RANK (#01 - #12)
+          ctx.font = `700 ${fSizes.rank} Montserrat, sans-serif`;
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'center';
           ctx.fillText(pad(i + 1), conf.xCoords.rank, cy);
 
-          // TEAM NAME
-          ctx.font = '700 17px Montserrat, sans-serif';
+          // 2. TEAM NAME
+          ctx.font = `700 ${fSizes.team} Montserrat, sans-serif`;
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'left';
           let displayName = row.teamName.toUpperCase();
-          const maxLen = (currentSelectedTemplate === 'monsoon_clash_s2') ? 24 : 28;
+          const maxLen = (currentSelectedTemplate === 'monsoon_clash_s2') ? 24 : 22;
           if (displayName.length > maxLen) displayName = displayName.substring(0, maxLen - 2) + '..';
           ctx.fillText(displayName, conf.xCoords.team, cy);
 
-          // MP
-          ctx.font = '700 19px Montserrat, sans-serif';
+          // 3. MP
+          ctx.font = `700 ${fSizes.nums} Montserrat, sans-serif`;
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'center';
           ctx.fillText(pad(row.matchesPlayed), conf.xCoords.mp, cy);
 
-          // WINS
-          ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', conf.xCoords.wins, cy);
+          // 4. Columns Mapping Based on Template Order
+          if (currentSelectedTemplate === 'per_match_pt') {
+            // per_match_pt Order: MATCH -> PLACE (PP) -> FINISH (KP) -> TOTAL (TP) -> WINS
+            ctx.fillText(pad(row.placePts), conf.xCoords.pp, cy);
+            ctx.fillText(pad(row.killPts), conf.xCoords.kp, cy);
 
-          // KP & PP Coordinates are mapped via conf.xCoords!
-          // Monsoon Clash: PP comes before KP[cite: 17]
-          // FSE: KP comes before PP[cite: 10]
-          ctx.fillText(pad(row.killPts), conf.xCoords.kp, cy);
-          ctx.fillText(pad(row.placePts), conf.xCoords.pp, cy);
+            ctx.font = `800 ${fSizes.tp} Montserrat, sans-serif`;
+            ctx.fillText(pad(row.total), conf.xCoords.tp, cy);
 
-          // TP (Total Points)
-          ctx.font = '800 20px Montserrat, sans-serif';
-          ctx.fillStyle = officialTextColor;
-          ctx.fillText(pad(row.total), conf.xCoords.tp, cy);
+            ctx.font = `700 ${fSizes.nums} Montserrat, sans-serif`;
+            ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', conf.xCoords.wins, cy);
+          } else {
+            // FSE & Monsoon Clash Order
+            ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', conf.xCoords.wins, cy);
+            ctx.fillText(pad(row.killPts), conf.xCoords.kp, cy);
+            ctx.fillText(pad(row.placePts), conf.xCoords.pp, cy);
+
+            ctx.font = `800 ${fSizes.tp} Montserrat, sans-serif`;
+            ctx.fillText(pad(row.total), conf.xCoords.tp, cy);
+          }
         });
 
         document.getElementById('osSection').classList.remove('hidden');
