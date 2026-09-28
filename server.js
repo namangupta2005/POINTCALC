@@ -357,213 +357,13 @@
 // const PORT = process.env.PORT || 3000;
 // app.listen(PORT, '0.0.0.0', () => console.log(`Server running at port ${PORT}`));
 
-// import express from 'express';
-// import multer from 'multer';
-// import dotenv from 'dotenv';
-// import path from 'path';
-// import fs from 'fs';
-// import { fileURLToPath } from 'url';
-// import { GoogleGenerativeAI } from '@google/generative-ai';
-
-// dotenv.config();
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-
-// const app = express();
-// const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
-
-// const MODEL_NAME = 'gemini-3.6-flash';
-
-// const rawKeys = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '')
-//   .split(',')
-//   .map(k => k.trim())
-//   .filter(Boolean);
-
-// let keyIndex = 0;
-
-// app.use(express.json());
-// app.use(express.static(__dirname));
-// app.use(express.static(path.join(__dirname, 'public')));
-
-// app.get('/', (req, res) => {
-//   const rootPath = path.join(__dirname, 'index.html');
-//   const publicPath = path.join(__dirname, 'public', 'index.html');
-
-//   if (fs.existsSync(rootPath)) {
-//     return res.sendFile(rootPath);
-//   } else if (fs.existsSync(publicPath)) {
-//     return res.sendFile(publicPath);
-//   } else {
-//     res.status(404).send('index.html not found.');
-//   }
-// });
-
-// // Dedicated Multi-Template Route (Supports fse_official, monsoon_clash_s2, per_match_pt)
-// app.get('/api/template-image', (req, res) => {
-//   const requested = req.query.template || 'fse_official';
-
-//   let targetFiles = [];
-//   if (requested === 'per_match_pt') {
-//     targetFiles = [
-//       'per_match_pt.jpeg',
-//       'per_match_pt.jpg',
-//       'per_match_pt.png'
-//     ];
-//   } else if (requested === 'monsoon_clash_s2') {
-//     targetFiles = [
-//       'monsoon_clash_s2.jpeg',
-//       'monsoon_clash_s2.jpg',
-//       'monsoon_clash_s2.png'
-//     ];
-//   } else {
-//     targetFiles = [
-//       'FSE OS.jpeg',
-//       'FSE OS.jpg',
-//       'template.jpeg',
-//       'template.jpg',
-//       'template.png',
-//       'pt.jpeg'
-//     ];
-//   }
-
-//   for (const name of targetFiles) {
-//     const rootPath = path.join(__dirname, name);
-//     const publicPath = path.join(__dirname, 'public', name);
-//     if (fs.existsSync(rootPath)) return res.sendFile(rootPath);
-//     if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
-//   }
-
-//   res.status(404).send(`Template image for ${requested} not found.`);
-// });
-
-// function parseCleanJson(text) {
-//   let cleaned = text.trim();
-//   const start = cleaned.indexOf('[');
-//   const end = cleaned.lastIndexOf(']');
-//   if (start === -1 || end === -1) throw new Error('AI output missing JSON array');
-//   return JSON.parse(cleaned.substring(start, end + 1));
-// }
-
-// // SMART KEY SWITCHING (Catches 503, 500, 429 & Overload)
-// async function callGeminiWithKeyRotation(prompt, parts) {
-//   if (rawKeys.length === 0) throw new Error('No API Keys configured');
-
-//   let attempts = 0;
-//   const maxAttempts = rawKeys.length * 3;
-
-//   while (attempts < maxAttempts) {
-//     const currentKey = rawKeys[keyIndex % rawKeys.length];
-//     keyIndex++;
-
-//     try {
-//       const genAI = new GoogleGenerativeAI(currentKey);
-//       const model = genAI.getGenerativeModel({
-//         model: MODEL_NAME,
-//         generationConfig: { responseMimeType: "application/json", temperature: 0.0 }
-//       });
-
-//       const result = await model.generateContent([prompt, ...parts]);
-//       return result.response.text();
-//     } catch (err) {
-//       attempts++;
-//       console.warn(`[Key Switch] Key #${(keyIndex - 1) % rawKeys.length + 1} failed: ${err.message}. Rotating...`);
-//       await new Promise(r => setTimeout(r, 600));
-//     }
-//   }
-//   throw new Error('All API keys hit quota or Gemini service is overloaded. Please retry in 10 seconds.');
-// }
-
-// // 1. Master Lobby Extract
-// app.post('/api/extract-lobby', upload.array('lobbyImages', 5), async (req, res) => {
-//   try {
-//     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload lobby screenshots' });
-
-//     const prompt = `
-//       Extract slot numbers (1-12) and player IGNs from Free Fire custom lobby screenshot.
-//       RULES:
-//       1. Slots must be integer 1 to 12.
-//       2. For each slot, list all visible players' names.
-//       3. Clean complex clan special symbols if possible, but keep plain letters/numbers readable.
-
-//       OUTPUT FORMAT (JSON ONLY):
-//       [
-//         { "slot": 1, "players": ["IGN1", "IGN2", "IGN3", "IGN4"] }
-//       ]
-//     `;
-
-//     const parts = req.files.map(f => ({
-//       inlineData: { data: f.buffer.toString('base64'), mimeType: f.mimetype }
-//     }));
-
-//     const raw = await callGeminiWithKeyRotation(prompt, parts);
-//     res.json({ success: true, data: parseCleanJson(raw) });
-//   } catch (err) {
-//     console.error('LOBBY_ERR:', err.message);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// // 2. Scoreboard Extract (Strict Integer Rank Deduplication)
-// app.post('/api/extract-result', upload.array('resultImages', 5), async (req, res) => {
-//   try {
-//     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload match result screenshots' });
-
-//     const prompt = `
-//       Extract Free Fire match scoreboard end-screen.
-//       CRITICAL DEDUPLICATION RULES:
-//       1. Ranks must be pure integers 1 to 12 only.
-//       2. If multiple screenshots overlap, IGNORE duplicate ranks.
-//       3. For each rank (#1 to #12):
-//          - "rank": integer (1 to 12)
-//          - "identifier": team name / captain IGN
-//          - "playerStats": array of { "ign": string, "kills": integer }
-//          - "kills": total kills for this squad (sum of playerStats)
-      
-//       OUTPUT STRICT JSON ARRAY ONLY:
-//       [
-//         {
-//           "rank": 1,
-//           "identifier": "TEAM NAME",
-//           "kills": 4,
-//           "playerStats": [{ "ign": "PLAYER1", "kills": 4 }]
-//         }
-//       ]
-//     `;
-
-//     const parts = req.files.map(f => ({
-//       inlineData: { data: f.buffer.toString('base64'), mimeType: f.mimetype }
-//     }));
-
-//     const raw = await callGeminiWithKeyRotation(prompt, parts);
-//     const parsed = parseCleanJson(raw);
-
-//     const uniqueMap = new Map();
-//     parsed.forEach(item => {
-//       const cleanRank = parseInt(String(item.rank).replace(/[^0-9]/g, ''), 10);
-//       if (cleanRank >= 1 && cleanRank <= 12 && !uniqueMap.has(cleanRank)) {
-//         item.rank = cleanRank;
-//         uniqueMap.set(cleanRank, item);
-//       }
-//     });
-
-//     const cleanList = Array.from(uniqueMap.values()).sort((a, b) => a.rank - b.rank);
-//     res.json({ success: true, data: cleanList });
-//   } catch (err) {
-//     console.error('RESULT_ERR:', err.message);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// const PORT = process.env.PORT || 3000;
-// app.listen(PORT, '0.0.0.0', () => console.log(`Server running at port ${PORT}`));
-
 import express from 'express';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 dotenv.config();
 
@@ -573,9 +373,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
-// Support multiple comma-separated keys or single key from .env
-const rawKeys = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
-let globalKeyIndex = 0;
+const MODEL_NAME = 'gemini-3.6-flash';
+
+const rawKeys = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '')
+  .split(',')
+  .map(k => k.trim())
+  .filter(Boolean);
+
+let keyIndex = 0;
 
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -584,92 +389,89 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
   const rootPath = path.join(__dirname, 'index.html');
   const publicPath = path.join(__dirname, 'public', 'index.html');
-  if (fs.existsSync(rootPath)) return res.sendFile(rootPath);
-  if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
-  res.status(404).send('index.html not found.');
+
+  if (fs.existsSync(rootPath)) {
+    return res.sendFile(rootPath);
+  } else if (fs.existsSync(publicPath)) {
+    return res.sendFile(publicPath);
+  } else {
+    res.status(404).send('index.html not found.');
+  }
 });
 
+// Dedicated Multi-Template Route (Supports fse_official, monsoon_clash_s2, per_match_pt)
 app.get('/api/template-image', (req, res) => {
   const requested = req.query.template || 'fse_official';
-  let targetFiles = requested === 'per_match_pt'
-    ? ['per_match_pt_2.jpeg', 'per_match_pt.jpeg', 'per_match_pt.png']
-    : (requested === 'monsoon_clash_s2' ? ['monsoon_clash_s2.jpeg', 'monsoon_clash_s2.png'] : ['FSE OS.jpeg', 'template.jpeg']);
+
+  let targetFiles = [];
+  if (requested === 'per_match_pt') {
+    targetFiles = [
+      'per_match_pt.jpeg',
+      'per_match_pt.jpg',
+      'per_match_pt.png'
+    ];
+  } else if (requested === 'monsoon_clash_s2') {
+    targetFiles = [
+      'monsoon_clash_s2.jpeg',
+      'monsoon_clash_s2.jpg',
+      'monsoon_clash_s2.png'
+    ];
+  } else {
+    targetFiles = [
+      'FSE OS.jpeg',
+      'FSE OS.jpg',
+      'template.jpeg',
+      'template.jpg',
+      'template.png',
+      'pt.jpeg'
+    ];
+  }
 
   for (const name of targetFiles) {
-    const p1 = path.join(__dirname, name);
-    const p2 = path.join(__dirname, 'public', name);
-    if (fs.existsSync(p1)) return res.sendFile(p1);
-    if (fs.existsSync(p2)) return res.sendFile(p2);
+    const rootPath = path.join(__dirname, name);
+    const publicPath = path.join(__dirname, 'public', name);
+    if (fs.existsSync(rootPath)) return res.sendFile(rootPath);
+    if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
   }
-  res.status(404).send('Template image not found');
+
+  res.status(404).send(`Template image for ${requested} not found.`);
 });
 
 function parseCleanJson(text) {
   let cleaned = text.trim();
   const start = cleaned.indexOf('[');
   const end = cleaned.lastIndexOf(']');
-  if (start === -1 || end === -1) throw new Error('AI output missing JSON array: ' + text.substring(0, 80));
+  if (start === -1 || end === -1) throw new Error('AI output missing JSON array');
   return JSON.parse(cleaned.substring(start, end + 1));
 }
 
-// Gemini Vision API with Automatic Key Rotation & Sequential/Retry Switch
-async function callGeminiRestVision(prompt, imageBuffer, mimeType) {
-  if (rawKeys.length === 0) throw new Error('GEMINI_API_KEY missing in .env');
+// SMART KEY SWITCHING (Catches 503, 500, 429 & Overload)
+async function callGeminiWithKeyRotation(prompt, parts) {
+  if (rawKeys.length === 0) throw new Error('No API Keys configured');
 
-  const maxRetries = 3;
-  let lastError = null;
+  let attempts = 0;
+  const maxAttempts = rawKeys.length * 3;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  while (attempts < maxAttempts) {
+    const currentKey = rawKeys[keyIndex % rawKeys.length];
+    keyIndex++;
+
     try {
-      // Har naye attempt ya nayi request par key automatically aage badh jayegi (Rotation)
-      const currentApiKey = rawKeys[globalKeyIndex % rawKeys.length];
-      
-      // Agli request ke liye index increment kar dete hain taaki next SS par next key use ho
-      globalKeyIndex++;
-
-      const base64Image = imageBuffer.toString('base64');
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: mimeType || 'image/jpeg',
-                    data: base64Image
-                  }
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            response_mime_type: "application/json",
-            temperature: 0.1
-          }
-        })
+      const genAI = new GoogleGenerativeAI(currentKey);
+      const model = genAI.getGenerativeModel({
+        model: MODEL_NAME,
+        generationConfig: { responseMimeType: "application/json", temperature: 0.0 }
       });
 
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error.message || 'Gemini REST API Error');
-      }
-
-      const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!textResult) throw new Error('Empty response from Gemini');
-      
-      return textResult;
+      const result = await model.generateContent([prompt, ...parts]);
+      return result.response.text();
     } catch (err) {
-      lastError = err;
-      console.warn(`[Attempt ${attempt}/${maxRetries}] Key busy/error. Rotating key & retrying in 3s...`);
-      await new Promise(r => setTimeout(r, 3000));
+      attempts++;
+      console.warn(`[Key Switch] Key #${(keyIndex - 1) % rawKeys.length + 1} failed: ${err.message}. Rotating...`);
+      await new Promise(r => setTimeout(r, 600));
     }
   }
-
-  throw new Error(`Google API Error across rotated keys: ${lastError.message}`);
+  throw new Error('All API keys hit quota or Gemini service is overloaded. Please retry in 10 seconds.');
 }
 
 // 1. Master Lobby Extract
@@ -677,13 +479,24 @@ app.post('/api/extract-lobby', upload.array('lobbyImages', 5), async (req, res) 
   try {
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload lobby screenshots' });
 
-    const prompt = `Extract all visible slot numbers (1-12) and player IGNs from Free Fire lobby screenshot.
-Return ONLY a valid JSON array like:
-[
-  { "slot": 1, "players": ["PlayerA", "PlayerB"] }
-]`;
+    const prompt = `
+      Extract slot numbers (1-12) and player IGNs from Free Fire custom lobby screenshot.
+      RULES:
+      1. Slots must be integer 1 to 12.
+      2. For each slot, list all visible players' names.
+      3. Clean complex clan special symbols if possible, but keep plain letters/numbers readable.
 
-    const raw = await callGeminiRestVision(prompt, req.files[0].buffer, req.files[0].mimetype);
+      OUTPUT FORMAT (JSON ONLY):
+      [
+        { "slot": 1, "players": ["IGN1", "IGN2", "IGN3", "IGN4"] }
+      ]
+    `;
+
+    const parts = req.files.map(f => ({
+      inlineData: { data: f.buffer.toString('base64'), mimeType: f.mimetype }
+    }));
+
+    const raw = await callGeminiWithKeyRotation(prompt, parts);
     res.json({ success: true, data: parseCleanJson(raw) });
   } catch (err) {
     console.error('LOBBY_ERR:', err.message);
@@ -691,23 +504,38 @@ Return ONLY a valid JSON array like:
   }
 });
 
-// 2. Scoreboard Extract
+// 2. Scoreboard Extract (Strict Integer Rank Deduplication)
 app.post('/api/extract-result', upload.array('resultImages', 5), async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload result screenshots' });
+    if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload match result screenshots' });
 
-    const prompt = `Extract Free Fire end match scoreboard. Find ranks (1-12), team name / captain IGN, total kills, and playerStats.
-Return ONLY a valid JSON array like:
-[
-  {
-    "rank": 1,
-    "identifier": "TEAM NAME",
-    "kills": 4,
-    "playerStats": [{ "ign": "PLAYER1", "kills": 4 }]
-  }
-]`;
+    const prompt = `
+      Extract Free Fire match scoreboard end-screen.
+      CRITICAL DEDUPLICATION RULES:
+      1. Ranks must be pure integers 1 to 12 only.
+      2. If multiple screenshots overlap, IGNORE duplicate ranks.
+      3. For each rank (#1 to #12):
+         - "rank": integer (1 to 12)
+         - "identifier": team name / captain IGN
+         - "playerStats": array of { "ign": string, "kills": integer }
+         - "kills": total kills for this squad (sum of playerStats)
+      
+      OUTPUT STRICT JSON ARRAY ONLY:
+      [
+        {
+          "rank": 1,
+          "identifier": "TEAM NAME",
+          "kills": 4,
+          "playerStats": [{ "ign": "PLAYER1", "kills": 4 }]
+        }
+      ]
+    `;
 
-    const raw = await callGeminiRestVision(prompt, req.files[0].buffer, req.files[0].mimetype);
+    const parts = req.files.map(f => ({
+      inlineData: { data: f.buffer.toString('base64'), mimeType: f.mimetype }
+    }));
+
+    const raw = await callGeminiWithKeyRotation(prompt, parts);
     const parsed = parseCleanJson(raw);
 
     const uniqueMap = new Map();
@@ -728,4 +556,176 @@ Return ONLY a valid JSON array like:
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Multi-Key Rotated Gemini Server live at port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server running at port ${PORT}`));
+
+// import express from 'express';
+// import multer from 'multer';
+// import dotenv from 'dotenv';
+// import path from 'path';
+// import fs from 'fs';
+// import { fileURLToPath } from 'url';
+
+// dotenv.config();
+
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
+// const app = express();
+// const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
+// // Support multiple comma-separated keys or single key from .env
+// const rawKeys = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+// let globalKeyIndex = 0;
+
+// app.use(express.json());
+// app.use(express.static(__dirname));
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// app.get('/', (req, res) => {
+//   const rootPath = path.join(__dirname, 'index.html');
+//   const publicPath = path.join(__dirname, 'public', 'index.html');
+//   if (fs.existsSync(rootPath)) return res.sendFile(rootPath);
+//   if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
+//   res.status(404).send('index.html not found.');
+// });
+
+// app.get('/api/template-image', (req, res) => {
+//   const requested = req.query.template || 'fse_official';
+//   let targetFiles = requested === 'per_match_pt'
+//     ? ['per_match_pt_2.jpeg', 'per_match_pt.jpeg', 'per_match_pt.png']
+//     : (requested === 'monsoon_clash_s2' ? ['monsoon_clash_s2.jpeg', 'monsoon_clash_s2.png'] : ['FSE OS.jpeg', 'template.jpeg']);
+
+//   for (const name of targetFiles) {
+//     const p1 = path.join(__dirname, name);
+//     const p2 = path.join(__dirname, 'public', name);
+//     if (fs.existsSync(p1)) return res.sendFile(p1);
+//     if (fs.existsSync(p2)) return res.sendFile(p2);
+//   }
+//   res.status(404).send('Template image not found');
+// });
+
+// function parseCleanJson(text) {
+//   let cleaned = text.trim();
+//   const start = cleaned.indexOf('[');
+//   const end = cleaned.lastIndexOf(']');
+//   if (start === -1 || end === -1) throw new Error('AI output missing JSON array: ' + text.substring(0, 80));
+//   return JSON.parse(cleaned.substring(start, end + 1));
+// }
+
+// // Gemini Vision API with Automatic Key Rotation & Sequential/Retry Switch
+// async function callGeminiRestVision(prompt, imageBuffer, mimeType) {
+//   if (rawKeys.length === 0) throw new Error('GEMINI_API_KEY missing in .env');
+
+//   const maxRetries = 3;
+//   let lastError = null;
+
+//   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+//     try {
+//       // Har naye attempt ya nayi request par key automatically aage badh jayegi (Rotation)
+//       const currentApiKey = rawKeys[globalKeyIndex % rawKeys.length];
+      
+//       // Agli request ke liye index increment kar dete hain taaki next SS par next key use ho
+//       globalKeyIndex++;
+
+//       const base64Image = imageBuffer.toString('base64');
+
+//       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({
+//           contents: [
+//             {
+//               parts: [
+//                 { text: prompt },
+//                 {
+//                   inline_data: {
+//                     mime_type: mimeType || 'image/jpeg',
+//                     data: base64Image
+//                   }
+//                 }
+//               ]
+//             }
+//           ],
+//           generationConfig: {
+//             response_mime_type: "application/json",
+//             temperature: 0.1
+//           }
+//         })
+//       });
+
+//       const data = await response.json();
+//       if (data.error) {
+//         throw new Error(data.error.message || 'Gemini REST API Error');
+//       }
+
+//       const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+//       if (!textResult) throw new Error('Empty response from Gemini');
+      
+//       return textResult;
+//     } catch (err) {
+//       lastError = err;
+//       console.warn(`[Attempt ${attempt}/${maxRetries}] Key busy/error. Rotating key & retrying in 3s...`);
+//       await new Promise(r => setTimeout(r, 3000));
+//     }
+//   }
+
+//   throw new Error(`Google API Error across rotated keys: ${lastError.message}`);
+// }
+
+// // 1. Master Lobby Extract
+// app.post('/api/extract-lobby', upload.array('lobbyImages', 5), async (req, res) => {
+//   try {
+//     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload lobby screenshots' });
+
+//     const prompt = `Extract all visible slot numbers (1-12) and player IGNs from Free Fire lobby screenshot.
+// Return ONLY a valid JSON array like:
+// [
+//   { "slot": 1, "players": ["PlayerA", "PlayerB"] }
+// ]`;
+
+//     const raw = await callGeminiRestVision(prompt, req.files[0].buffer, req.files[0].mimetype);
+//     res.json({ success: true, data: parseCleanJson(raw) });
+//   } catch (err) {
+//     console.error('LOBBY_ERR:', err.message);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+// // 2. Scoreboard Extract
+// app.post('/api/extract-result', upload.array('resultImages', 5), async (req, res) => {
+//   try {
+//     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Upload result screenshots' });
+
+//     const prompt = `Extract Free Fire end match scoreboard. Find ranks (1-12), team name / captain IGN, total kills, and playerStats.
+// Return ONLY a valid JSON array like:
+// [
+//   {
+//     "rank": 1,
+//     "identifier": "TEAM NAME",
+//     "kills": 4,
+//     "playerStats": [{ "ign": "PLAYER1", "kills": 4 }]
+//   }
+// ]`;
+
+//     const raw = await callGeminiRestVision(prompt, req.files[0].buffer, req.files[0].mimetype);
+//     const parsed = parseCleanJson(raw);
+
+//     const uniqueMap = new Map();
+//     parsed.forEach(item => {
+//       const cleanRank = parseInt(String(item.rank).replace(/[^0-9]/g, ''), 10);
+//       if (cleanRank >= 1 && cleanRank <= 12 && !uniqueMap.has(cleanRank)) {
+//         item.rank = cleanRank;
+//         uniqueMap.set(cleanRank, item);
+//       }
+//     });
+
+//     const cleanList = Array.from(uniqueMap.values()).sort((a, b) => a.rank - b.rank);
+//     res.json({ success: true, data: cleanList });
+//   } catch (err) {
+//     console.error('RESULT_ERR:', err.message);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Multi-Key Rotated Gemini Server live at port ${PORT}`));
