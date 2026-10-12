@@ -228,6 +228,7 @@
               <option value="fse_official">FSE Official Template (Square)</option>
               <option value="monsoon_clash_s2">monsoon_clash_s2 (Vertical)</option>
               <option value="per_match_pt">per_match_pt (Red/Black Edition)</option>
+              <option value="iconic_bash_s2">Iconic Bash S2 (Red Fire)</option>
             </select>
             <button id="downloadOsBtn" class="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
               Download HD Standings (.png)
@@ -335,6 +336,17 @@
         rowYCenters: [598.5, 659.0, 718.5, 778.5, 837.5, 896.0, 955.5, 1014.5, 1073.5, 1132.5, 1191.5, 1252.0],
         xCoords: { rank: 100.5, team: 175.0, mp: 566.0, pp: 678.0, kp: 795.0, tp: 911.0, wins: 1018.5 },
         fontSizes: { rank: '22px', team: '18px', nums: '20px', tp: '22px' }
+      },
+      iconic_bash_s2: {
+        width: 1080,
+        height: 1080,
+        url: '/api/template-image?template=iconic_bash_s2',
+        directFile: 'IB_S2.jpeg',
+        textColor: '#000000',
+        rankColor: '#ffffff',
+        rowYCenters: [413, 458, 503, 548, 593, 638, 683, 728, 773, 818, 862, 905],
+        xCoords: { rank: 90.5, team: 165, mp: 487.5, wins: 587.5, kp: 682.5, pp: 767.5, tp: 857.5 },
+        fontSizes: { rank: '19px', team: '16px', nums: '18px', tp: '19px' }
       }
     };
 
@@ -367,6 +379,7 @@
     getOrLoadTemplateImage('fse_official');
     getOrLoadTemplateImage('monsoon_clash_s2');
     getOrLoadTemplateImage('per_match_pt');
+    getOrLoadTemplateImage('iconic_bash_s2');
 
     document.getElementById('templateThemeSelect').addEventListener('change', (e) => {
       currentSelectedTemplate = e.target.value;
@@ -1456,16 +1469,19 @@
 
         ctx.textBaseline = 'middle';
         const officialTextColor = conf.textColor;
+        const rankTextColor = conf.rankColor || officialTextColor;
         const fSizes = conf.fontSizes || { rank: '20px', team: '17px', nums: '19px', tp: '20px' };
 
         leaderBoard.forEach((row, i) => {
           const cy = conf.rowYCenters[i];
 
+          // 1. Rank Column (Centered)
           ctx.font = `700 ${fSizes.rank} Montserrat, sans-serif`;
-          ctx.fillStyle = officialTextColor;
+          ctx.fillStyle = rankTextColor;
           ctx.textAlign = 'center';
           ctx.fillText(pad(i + 1), conf.xCoords.rank, cy);
 
+          // 2. Team Name Column (Left Aligned with padding)
           ctx.font = `700 ${fSizes.team} Montserrat, sans-serif`;
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'left';
@@ -1474,6 +1490,7 @@
           if (displayName.length > maxLen) displayName = displayName.substring(0, maxLen - 2) + '..';
           ctx.fillText(displayName, conf.xCoords.team, cy);
 
+          // 3. MP Column (Centered)
           ctx.font = `700 ${fSizes.nums} Montserrat, sans-serif`;
           ctx.fillStyle = officialTextColor;
           ctx.textAlign = 'center';
@@ -1489,11 +1506,21 @@
             ctx.font = `700 ${fSizes.nums} Montserrat, sans-serif`;
             ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', conf.xCoords.wins, cy);
           } else {
+            // WINS Column (Centered)
+            ctx.textAlign = 'center';
             ctx.fillText(row.wins > 0 ? pad(row.wins) : '--', conf.xCoords.wins, cy);
+            
+            // KP Column (Centered)
+            ctx.textAlign = 'center';
             ctx.fillText(pad(row.killPts), conf.xCoords.kp, cy);
+            
+            // PP Column (Centered)
+            ctx.textAlign = 'center';
             ctx.fillText(pad(row.placePts), conf.xCoords.pp, cy);
 
+            // TP Column (Centered & Bold)
             ctx.font = `800 ${fSizes.tp} Montserrat, sans-serif`;
+            ctx.textAlign = 'center';
             ctx.fillText(pad(row.total), conf.xCoords.tp, cy);
           }
         });
