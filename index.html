@@ -229,6 +229,7 @@
               <option value="monsoon_clash_s2">monsoon_clash_s2 (Vertical)</option>
               <option value="per_match_pt">per_match_pt (Red/Black Edition)</option>
               <option value="iconic_bash_s2">Iconic Bash S2 (Red Fire)</option>
+              <option value="diwali_cup">Diwali Cup (Red Gold)</option>
             </select>
             <button id="downloadOsBtn" class="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-500 hover:to-pink-400 text-white font-black px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-pink-500/20">
               Download HD Standings (.png)
@@ -344,9 +345,20 @@
         directFile: 'IB_S2.jpeg',
         textColor: '#000000',
         rankColor: '#ffffff',
-        rowYCenters: [413, 458, 503, 548, 593, 638, 683, 728, 773, 818, 862, 905],
-        xCoords: { rank: 90.5, team: 165, mp: 487.5, wins: 587.5, kp: 682.5, pp: 767.5, tp: 857.5 },
+        rowYCenters: [413, 458, 503, 548, 593, 638, 683, 728, 773, 818, 863, 908],
+        xCoords: { rank: 85.5, team: 165, mp: 487.5, wins: 587.5, kp: 692.5, pp: 767.5, tp: 857.5 },
         fontSizes: { rank: '19px', team: '16px', nums: '18px', tp: '19px' }
+      },
+     diwali_cup: {
+        width: 1080,
+        height: 1080,
+        url: '/api/template-image?template=diwali_cup',
+        directFile: 'diwali_cup.jpeg',
+        textColor: '#000000',
+        rankColor: '#000000',
+        rowYCenters: [457, 495, 534, 572, 609, 646, 684, 722, 759, 795, 833, 872],
+        xCoords: { rank: 85.5, team: 165, mp: 586.0, wins: 688.0, kp: 788.0, pp: 891.0, tp: 997.0 },
+        fontSizes: { rank: '17px', team: '14px', nums: '17px', tp: '18px' }
       }
     };
 
@@ -380,6 +392,7 @@
     getOrLoadTemplateImage('monsoon_clash_s2');
     getOrLoadTemplateImage('per_match_pt');
     getOrLoadTemplateImage('iconic_bash_s2');
+    getOrLoadTemplateImage('diwali_cup');
 
     document.getElementById('templateThemeSelect').addEventListener('change', (e) => {
       currentSelectedTemplate = e.target.value;
@@ -521,11 +534,11 @@
       const slotContainer = document.getElementById('slotlistInputs');
       slotContainer.innerHTML = '';
       for (let i = 1; i <= 12; i++) {
-        const val = t.registeredSlots[i] || `Team ${i}`;
+        const val = t.registeredSlots[i] && !t.registeredSlots[i].startsWith('Team ') ? t.registeredSlots[i] : '';
         slotContainer.innerHTML += `
           <div class="bg-slate-950 border border-slate-800 rounded-lg p-1.5 sm:p-2">
             <label class="text-[9px] sm:text-[10px] font-bold text-amber-400 block mb-0.5">SLOT ${i}</label>
-            <input type="text" id="slot_input_${i}" class="w-full bg-transparent border-0 text-xs text-slate-200 outline-none font-semibold focus:text-amber-300" value="${val}">
+            <input type="text" id="slot_input_${i}" placeholder="Team ${i}" class="w-full bg-transparent border-0 text-xs text-slate-200 outline-none font-semibold focus:text-amber-300" value="${val}">
           </div>
         `;
       }
@@ -1521,7 +1534,7 @@
             // TP Column (Centered & Bold)
             ctx.font = `800 ${fSizes.tp} Montserrat, sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(pad(row.total), conf.xCoords.tp, cy);
+            ctx.fillText(pad(row.total), conf.xCoords.tp, conf.xCoords.tp ? cy : 0);
           }
         });
 
